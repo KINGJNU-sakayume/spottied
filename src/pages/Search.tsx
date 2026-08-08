@@ -18,6 +18,9 @@ import { useOnline, useTracksByAlbum } from '../utils/hooks';
 
 export default function Search() {
   const [query, setQuery] = useState('');
+  // A Hangul IME reports every intermediate jamo through onChange, so
+  // searching mid-composition fires requests for fragments like "ㅇ".
+  const [composing, setComposing] = useState(false);
   const [results, setResults] = useState<SpotifyArtistObject[]>([]);
   const [searching, setSearching] = useState(false);
   const debounceRef = useRef<number | null>(null);
@@ -42,6 +45,7 @@ export default function Search() {
       setSearching(false);
       return;
     }
+    if (composing) return;
     setSearching(true);
     debounceRef.current = window.setTimeout(() => {
       void searchArtists(q)
@@ -58,7 +62,7 @@ export default function Search() {
     return () => {
       if (debounceRef.current != null) window.clearTimeout(debounceRef.current);
     };
-  }, [query, connected, pushToast]);
+  }, [query, composing, connected, pushToast]);
 
   const startDigging = async (result: SpotifyArtistObject) => {
     try {
@@ -105,6 +109,11 @@ export default function Search() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onCompositionStart={() => setComposing(true)}
+              onCompositionEnd={(e) => {
+                setComposing(false);
+                setQuery(e.currentTarget.value);
+              }}
               placeholder="아티스트 검색"
               disabled={!online}
               title={online ? undefined : '오프라인'}
