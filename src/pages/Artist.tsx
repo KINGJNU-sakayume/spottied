@@ -128,9 +128,9 @@ export default function ArtistPage() {
               </h1>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <StatusBadge status={status} />
-                {artist.genres.length > 0 && (
+                {(artist.genres ?? []).length > 0 && (
                   <span className="truncate text-xs text-ink/50">
-                    {artist.genres.slice(0, 3).join(' · ')}
+                    {(artist.genres ?? []).slice(0, 3).join(' · ')}
                   </span>
                 )}
               </div>

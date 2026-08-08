@@ -127,7 +127,8 @@ export const useArtistStore = create<ArtistState>((set, get) => {
           id: detail.id,
           name: detail.name,
           images: detail.images,
-          genres: detail.genres,
+          // genres is deprecated and may be absent; normalize at the boundary.
+          genres: detail.genres ?? [],
           addedAt: now,
           scope: { album: true, single: true, compilation: false },
           discographySyncedAt: now,
@@ -178,7 +179,7 @@ export const useArtistStore = create<ArtistState>((set, get) => {
         ...artist,
         name: detail.name,
         images: detail.images,
-        genres: detail.genres,
+        genres: detail.genres ?? artist.genres,
         discographySyncedAt: new Date().toISOString(),
       };
       await db.transaction('rw', db.artists, db.albums, async () => {

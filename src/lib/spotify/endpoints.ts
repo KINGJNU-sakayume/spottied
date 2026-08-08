@@ -11,13 +11,14 @@ export interface SpotifyArtistObject {
   id: string;
   name: string;
   images: SpotifyImage[];
-  genres: string[];
-  followers?: { total: number };
+  // Deprecated in the February 2026 API change; may be absent.
+  genres?: string[];
 }
 
 interface SpotifyAlbumObject {
   id: string;
   name: string;
+  // album_group was removed in February 2026; album_type is the fallback.
   album_group?: string;
   album_type: string;
   release_date: string;
@@ -44,17 +45,54 @@ export interface RecentlyPlayedItem {
   played_at: string;
 }
 
-export async function searchArtists(query: string): Promise<SpotifyArtistObject[]> {
+/**
+ * February 2026 lowered /v1/search's limit ceiling from 50 to 10 (default 20
+ * to 5). Anything above 10 is rejected with a literal 400 "Invalid limit".
+ */
+export const SEARCH_PAGE_SIZE = 10;
+
+/** Market for catalog lookups — never read from the user profile, whose
+ * `country` field was removed in February 2026. */
+export const CATALOG_MARKET = 'KR';
+
+/**
+ * Page size for the paginated discography endpoints. The February 2026
+ * changelog documents a new ceiling for /v1/search only; this value is
+ * unverified for these two endpoints. If they ever answer 400 "Invalid
+ * limit", lower this — the paging loops read `items.length` and `next`, so
+ * any page size works.
+ */
+export const CATALOG_PAGE_SIZE = 50;
+
+export function buildArtistSearchPath(query: string, offset = 0): string {
   const params = new URLSearchParams({
     q: query,
     type: 'artist',
-    market: 'KR',
-    limit: '20',
+    market: CATALOG_MARKET,
+    limit: String(SEARCH_PAGE_SIZE),
+    offset: String(offset),
   });
+  return `/v1/search?${params.toString()}`;
+}
+
+export interface ArtistSearchPage {
+  items: SpotifyArtistObject[];
+  hasMore: boolean;
+  total: number;
+}
+
+export async function searchArtists(
+  query: string,
+  offset = 0,
+): Promise<ArtistSearchPage> {
   const data = await spotifyFetch<{ artists: Paging<SpotifyArtistObject> }>(
-    `/v1/search?${params.toString()}`,
+    buildArtistSearchPath(query, offset),
   );
-  return data.artists.items;
+  return {
+    items: data.artists.items,
+    hasMore: data.artists.next != null,
+    total: data.artists.total,
+  };
 }
 
 export async function getArtist(id: string): Promise<SpotifyArtistObject> {
@@ -76,8 +114,8 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
   for (;;) {
     const params = new URLSearchParams({
       include_groups: 'album,single,compilation',
-      market: 'KR',
-      limit: '50',
+      market: CATALOG_MARKET,
+      limit: String(CATALOG_PAGE_SIZE),
       offset: String(offset),
     });
     const page = await spotifyFetch<Paging<SpotifyAlbumObject>>(
@@ -112,8 +150,8 @@ export async function getAlbumTracks(
   let offset = 0;
   for (;;) {
     const params = new URLSearchParams({
-      market: 'KR',
-      limit: '50',
+      market: CATALOG_MARKET,
+      limit: String(CATALOG_PAGE_SIZE),
       offset: String(offset),
     });
     const page = await spotifyFetch<Paging<SpotifyTrackObject>>(
@@ -139,7 +177,7 @@ export async function getAlbumTracks(
 
 export async function getRecentlyPlayed(): Promise<RecentlyPlayedItem[]> {
   const data = await spotifyFetch<{ items: RecentlyPlayedItem[] }>(
-    '/v1/me/player/recently-played?limit=50',
+    `/v1/me/player/recently-played?limit=${CATALOG_PAGE_SIZE}`,
   );
   return data.items;
 }

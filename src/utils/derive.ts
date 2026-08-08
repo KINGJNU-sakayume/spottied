@@ -240,7 +240,8 @@ export interface GenreCount {
 export function genreDistribution(artists: Artist[]): GenreCount[] {
   const counts = new Map<string, number>();
   for (const a of artists) {
-    for (const g of a.genres) {
+    // genres is deprecated upstream, so rows imported later may lack it.
+    for (const g of a.genres ?? []) {
       counts.set(g, (counts.get(g) ?? 0) + 1);
     }
   }

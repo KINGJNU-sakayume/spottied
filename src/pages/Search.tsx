@@ -9,7 +9,11 @@ import {
   hasTokens,
   isClientIdConfigured,
 } from '../lib/spotify/client';
-import { searchArtists, type SpotifyArtistObject } from '../lib/spotify/endpoints';
+import {
+  SEARCH_PAGE_SIZE,
+  searchArtists,
+  type SpotifyArtistObject,
+} from '../lib/spotify/endpoints';
 import { beginLogin } from '../lib/spotify/pkce';
 import { useArtistStore } from '../store/artistStore';
 import { useUiStore } from '../store/uiStore';
@@ -23,6 +27,10 @@ export default function Search() {
   const [composing, setComposing] = useState(false);
   const [results, setResults] = useState<SpotifyArtistObject[]>([]);
   const [searching, setSearching] = useState(false);
+  // A failed search must never render as "no results".
+  const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const debounceRef = useRef<number | null>(null);
   const navigate = useNavigate();
   const online = useOnline();
@@ -43,19 +51,26 @@ export default function Search() {
     if (q === '' || !connected) {
       setResults([]);
       setSearching(false);
+      setError(null);
+      setHasMore(false);
       return;
     }
     if (composing) return;
     setSearching(true);
     debounceRef.current = window.setTimeout(() => {
-      void searchArtists(q)
-        .then((items) => {
-          setResults(items);
+      void searchArtists(q, 0)
+        .then((page) => {
+          setResults(page.items);
+          setHasMore(page.hasMore);
+          setError(null);
         })
         .catch((e: unknown) => {
-          if (!(e instanceof SpotifyAuthError)) {
-            pushToast(e instanceof Error ? e.message : '검색에 실패했어요');
-          }
+          const message =
+            e instanceof Error ? e.message : '검색에 실패했어요';
+          setResults([]);
+          setHasMore(false);
+          setError(message);
+          if (!(e instanceof SpotifyAuthError)) pushToast(message);
         })
         .finally(() => setSearching(false));
     }, 400);
@@ -63,6 +78,26 @@ export default function Search() {
       if (debounceRef.current != null) window.clearTimeout(debounceRef.current);
     };
   }, [query, composing, connected, pushToast]);
+
+  const loadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const page = await searchArtists(query.trim(), results.length);
+      // De-dupe: paging over a shifting result set can repeat an artist.
+      setResults((prev) => {
+        const seen = new Set(prev.map((a) => a.id));
+        return [...prev, ...page.items.filter((a) => !seen.has(a.id))];
+      });
+      setHasMore(page.hasMore);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : '더 불러오지 못했어요';
+      setError(message);
+      pushToast(message);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const startDigging = async (result: SpotifyArtistObject) => {
     try {
@@ -149,9 +184,9 @@ export default function Search() {
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">{result.name}</p>
-                      {result.genres.length > 0 && (
+                      {(result.genres ?? []).length > 0 && (
                         <p className="truncate text-xs text-ink/45">
-                          {result.genres.slice(0, 3).join(' · ')}
+                          {(result.genres ?? []).slice(0, 3).join(' · ')}
                         </p>
                       )}
                     </div>
@@ -176,10 +211,31 @@ export default function Search() {
                   </div>
                 );
               })}
-            {!searching && query.trim() !== '' && results.length === 0 && (
+            {!searching && error && (
+              <div className="glass rounded-[20px] p-4 text-center">
+                <p className="text-sm font-semibold text-rose-600">
+                  검색에 실패했어요
+                </p>
+                <p className="mt-1.5 text-sm leading-relaxed text-ink/60">
+                  {error}
+                </p>
+              </div>
+            )}
+            {!searching && !error && query.trim() !== '' && results.length === 0 && (
               <p className="py-8 text-center text-sm text-ink/40">
                 검색 결과가 없어요
               </p>
+            )}
+            {!searching && !error && hasMore && (
+              <button
+                type="button"
+                disabled={loadingMore || !online}
+                title={online ? undefined : '오프라인'}
+                className="glass w-full rounded-[20px] py-3 text-sm font-semibold text-ink/70 transition-colors hover:text-ink disabled:opacity-40"
+                onClick={() => void loadMore()}
+              >
+                {loadingMore ? '불러오는 중…' : `더 보기 (${SEARCH_PAGE_SIZE}개씩)`}
+              </button>
             )}
           </div>
         </>

@@ -51,24 +51,55 @@ const CATALOG_ACCESS_HINT =
 
 const MISLEADING_CATALOG_ERRORS = ['invalid limit', 'invalid offset'];
 
-/** Spotify puts the useful detail in the response body, not the status. */
-async function readSpotifyError(res: Response, fallback: string): Promise<string> {
+/** A failed Spotify API call, carrying the pieces callers branch on. */
+export class SpotifyApiError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+    readonly reason?: string,
+  ) {
+    super(message);
+    this.name = 'SpotifyApiError';
+  }
+}
+
+interface SpotifyErrorBody {
+  detail?: string;
+  reason?: string;
+}
+
+/**
+ * Spotify puts the useful detail in the response body, not the status, and
+ * the body can only be read once — so read it once and hand back both parts.
+ */
+async function readErrorBody(res: Response): Promise<SpotifyErrorBody> {
   try {
     const body = (await res.json()) as {
-      error?: string | { message?: string };
+      error?: string | { message?: string; reason?: string };
       error_description?: string;
     };
-    const detail =
-      body.error_description ??
-      (typeof body.error === 'string' ? body.error : body.error?.message);
-    if (!detail) return fallback;
-    const message = `${fallback} — ${detail}`;
-    return MISLEADING_CATALOG_ERRORS.includes(detail.trim().toLowerCase())
-      ? `${message}. ${CATALOG_ACCESS_HINT}`
-      : message;
+    const errorObject = typeof body.error === 'object' ? body.error : undefined;
+    return {
+      detail:
+        body.error_description ??
+        (typeof body.error === 'string' ? body.error : errorObject?.message),
+      reason: errorObject?.reason,
+    };
   } catch {
-    return fallback;
+    return {};
   }
+}
+
+function describe(fallback: string, detail?: string): string {
+  if (!detail) return fallback;
+  const message = `${fallback} — ${detail}`;
+  return MISLEADING_CATALOG_ERRORS.includes(detail.trim().toLowerCase())
+    ? `${message}. ${CATALOG_ACCESS_HINT}`
+    : message;
+}
+
+async function readSpotifyError(res: Response, fallback: string): Promise<string> {
+  return describe(fallback, (await readErrorBody(res)).detail);
 }
 
 /** The app's own root URL — must be registered in the Spotify dashboard. */
@@ -172,10 +203,26 @@ export async function spotifyFetch<T>(path: string): Promise<T> {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (res.status === 429) {
+      const { detail, reason } = await readErrorBody(res);
+      // A blown quota does not recover by waiting out Retry-After.
+      if (reason === 'QUOTA_EXCEEDED') {
+        const message = describe('Spotify 일일 요청 쿼터를 초과했어요', detail);
+        console.error(`[spotify] 429 ${path} — ${message}`);
+        throw new SpotifyApiError(429, message, reason);
+      }
       rateLimitHandler?.();
       const retryAfter = Number(res.headers.get('Retry-After') ?? '1');
       await sleep((Number.isFinite(retryAfter) ? retryAfter : 1) * 1000 + 200);
       continue;
+    }
+    if (res.status === 403) {
+      const { detail, reason } = await readErrorBody(res);
+      const message = describe(
+        '접근이 거부되었어요 (Spotify 계정 권한·Premium 여부·앱 허용 목록을 확인해 주세요)',
+        detail,
+      );
+      console.error(`[spotify] 403 ${path} — ${message}`);
+      throw new SpotifyApiError(403, message, reason);
     }
     if (res.status === 401) {
       if (retried401) {
@@ -192,9 +239,10 @@ export async function spotifyFetch<T>(path: string): Promise<T> {
       continue;
     }
     if (!res.ok) {
-      throw new Error(
-        await readSpotifyError(res, `Spotify API 오류 (${res.status})`),
-      );
+      const { detail, reason } = await readErrorBody(res);
+      const message = describe(`Spotify API 오류 (${res.status})`, detail);
+      console.error(`[spotify] ${res.status} ${path} — ${message}`);
+      throw new SpotifyApiError(res.status, message, reason);
     }
     return res.json() as Promise<T>;
   }
