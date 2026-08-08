@@ -9,6 +9,7 @@ import type {
   ListenEvent,
   ListenSource,
   Track,
+  TrackStatus,
 } from '../types';
 import { getAlbumProgress, getArtistStatus } from '../utils/derive';
 import { useLogStore } from './logStore';
@@ -19,6 +20,19 @@ interface CompletionSnapshot {
   artistId: string;
   albumComplete: boolean;
   artistCompleted: boolean;
+}
+
+/**
+ * Everything needed to reverse one `markAlbumListened` call. Plain data rather
+ * than a closure over the old tracks: the user has six seconds to hit 실행 취소,
+ * and anything they rate or like in the meantime must survive the undo. Only
+ * the `status` field is reverted, against whatever the track looks like then.
+ */
+export interface AlbumListenSnapshot {
+  albumId: string;
+  artistId: string;
+  previousStatuses: Record<string, TrackStatus>;
+  createdEventIds: string[];
 }
 
 interface ArtistState {
@@ -46,7 +60,12 @@ interface ArtistState {
     opts?: { listenedAt?: string; source?: ListenSource },
   ) => Promise<void>;
   setTrackStatus: (trackId: string, status: 'none' | 'skipped') => Promise<void>;
-  markAlbumListened: (albumId: string) => Promise<void>;
+  /** Returns null when nothing changed (unknown album, or already complete). */
+  markAlbumListened: (
+    albumId: string,
+    listenedAt?: string,
+  ) => Promise<AlbumListenSnapshot | null>;
+  undoAlbumListened: (snapshot: AlbumListenSnapshot) => Promise<void>;
   updateTrack: (trackId: string, patch: Partial<Track>) => Promise<void>;
   updateAlbum: (albumId: string, patch: Partial<Album>) => Promise<void>;
   updateArtist: (artistId: string, patch: Partial<Artist>) => Promise<void>;
@@ -84,11 +103,14 @@ export const useArtistStore = create<ArtistState>((set, get) => {
     };
   }
 
-  function toastOnNewCompletion(before: CompletionSnapshot): void {
+  function toastOnNewCompletion(
+    before: CompletionSnapshot,
+    opts: { skipAlbum?: boolean } = {},
+  ): void {
     const after = snapshotCompletion(before.albumId, before.artistId);
     const { albums, artists } = get();
     const pushToast = useUiStore.getState().pushToast;
-    if (!before.albumComplete && after.albumComplete) {
+    if (!opts.skipAlbum && !before.albumComplete && after.albumComplete) {
       const album = albums[before.albumId];
       if (album) pushToast(`『${album.name}』 완료`);
     }
@@ -315,16 +337,16 @@ export const useArtistStore = create<ArtistState>((set, get) => {
       toastOnNewCompletion(before);
     },
 
-    markAlbumListened: async (albumId) => {
+    markAlbumListened: async (albumId, listenedAt) => {
       const { tracks, albums } = get();
       const album = albums[albumId];
-      if (!album) return;
+      if (!album) return null;
       const before = snapshotCompletion(albumId, album.artistId);
       const targets = albumTracksOf(tracks, albumId).filter(
         (t) => t.status !== 'listened',
       );
-      if (targets.length === 0) return;
-      const now = new Date().toISOString();
+      if (targets.length === 0) return null;
+      const now = listenedAt ?? new Date().toISOString();
       const updatedTracks = targets.map(
         (t): Track => ({ ...t, status: 'listened' }),
       );
@@ -346,7 +368,45 @@ export const useArtistStore = create<ArtistState>((set, get) => {
         },
       }));
       await useLogStore.getState().addEvents(events);
-      toastOnNewCompletion(before);
+      // The caller pushes its own "{n}곡 청취 처리 · 실행 취소" toast, so the
+      // album-completion toast would just be a near-duplicate bar. The rarer
+      // artist 완주 celebration still fires.
+      toastOnNewCompletion(before, { skipAlbum: true });
+      return {
+        albumId,
+        artistId: album.artistId,
+        previousStatuses: Object.fromEntries(
+          targets.map((t) => [t.id, t.status]),
+        ),
+        createdEventIds: events.map((e) => e.id),
+      };
+    },
+
+    undoAlbumListened: async (snapshot) => {
+      const { tracks } = get();
+      const restored: Track[] = [];
+      for (const [trackId, status] of Object.entries(
+        snapshot.previousStatuses,
+      )) {
+        const track = tracks[trackId];
+        if (track) restored.push({ ...track, status });
+      }
+      if (restored.length > 0) {
+        await db.tracks.bulkPut(restored);
+        set((s) => ({
+          tracks: {
+            ...s.tracks,
+            ...Object.fromEntries(restored.map((t) => [t.id, t])),
+          },
+        }));
+      }
+      // Restoring the statuses without dropping the events would leave the
+      // diary and every stat claiming listens that no longer happened.
+      await useLogStore.getState().removeEvents(snapshot.createdEventIds);
+      const pending = get().lastManualListen;
+      if (pending && snapshot.createdEventIds.includes(pending.eventId)) {
+        set({ lastManualListen: null });
+      }
     },
 
     updateTrack: async (trackId, patch) => {
