@@ -138,8 +138,10 @@ export default function Search() {
         </div>
       ) : (
         <>
-          <div className="glass-inset flex items-center gap-2.5 rounded-[20px] px-4 py-3">
+          <div className="glass-inset flex items-center gap-2.5 rounded-[20px] px-4 py-3 transition-shadow focus-within:ring-2 focus-within:ring-ink/25">
             <SearchIcon size={17} className="shrink-0 text-ink/35" />
+            {/* text-ink is explicit: the field renders white otherwise, and
+                the text caret goes invisible along with it. */}
             <input
               type="search"
               value={query}
@@ -152,7 +154,7 @@ export default function Search() {
               placeholder="아티스트 검색"
               disabled={!online}
               title={online ? undefined : '오프라인'}
-              className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-ink/30 disabled:opacity-40"
+              className="min-w-0 flex-1 bg-transparent text-base text-ink caret-ink outline-none placeholder:text-ink/30 disabled:opacity-40"
             />
           </div>
 

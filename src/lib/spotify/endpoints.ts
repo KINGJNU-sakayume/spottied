@@ -1,5 +1,5 @@
 import type { Album, AlbumGroup, SpotifyImage, Track } from '../../types';
-import { spotifyFetch } from './client';
+import { SpotifyApiError, spotifyFetch } from './client';
 
 interface Paging<T> {
   items: T[];
@@ -56,13 +56,35 @@ export const SEARCH_PAGE_SIZE = 10;
 export const CATALOG_MARKET = 'KR';
 
 /**
- * Page size for the paginated discography endpoints. The February 2026
- * changelog documents a new ceiling for /v1/search only; this value is
- * unverified for these two endpoints. If they ever answer 400 "Invalid
- * limit", lower this — the paging loops read `items.length` and `next`, so
- * any page size works.
+ * Page size for the paginated discography endpoints. February 2026 lowered
+ * the ceilings and the changelog is not reachable to confirm each one, so
+ * this matches the documented search ceiling and `fetchPage` falls back to
+ * Spotify's own default if even that is refused.
  */
-export const CATALOG_PAGE_SIZE = 50;
+export const CATALOG_PAGE_SIZE = 10;
+
+/**
+ * Runs a paginated request, retrying without `limit` if Spotify rejects the
+ * page size. The paging loops below read `items.length` and `next`, so they
+ * work with whatever page size comes back.
+ */
+async function fetchPage<T>(
+  basePath: string,
+  params: URLSearchParams,
+): Promise<Paging<T>> {
+  try {
+    return await spotifyFetch<Paging<T>>(`${basePath}?${params.toString()}`);
+  } catch (e) {
+    const rejectedLimit =
+      e instanceof SpotifyApiError &&
+      e.status === 400 &&
+      /invalid limit/i.test(e.message);
+    if (!rejectedLimit || !params.has('limit')) throw e;
+    const retry = new URLSearchParams(params);
+    retry.delete('limit');
+    return spotifyFetch<Paging<T>>(`${basePath}?${retry.toString()}`);
+  }
+}
 
 export function buildArtistSearchPath(query: string, offset = 0): string {
   const params = new URLSearchParams({
@@ -118,8 +140,9 @@ export async function getArtistAlbums(artistId: string): Promise<Album[]> {
       limit: String(CATALOG_PAGE_SIZE),
       offset: String(offset),
     });
-    const page = await spotifyFetch<Paging<SpotifyAlbumObject>>(
-      `/v1/artists/${artistId}/albums?${params.toString()}`,
+    const page = await fetchPage<SpotifyAlbumObject>(
+      `/v1/artists/${artistId}/albums`,
+      params,
     );
     for (const raw of page.items) {
       if (seen.has(raw.id)) continue;
@@ -154,8 +177,9 @@ export async function getAlbumTracks(
       limit: String(CATALOG_PAGE_SIZE),
       offset: String(offset),
     });
-    const page = await spotifyFetch<Paging<SpotifyTrackObject>>(
-      `/v1/albums/${albumId}/tracks?${params.toString()}`,
+    const page = await fetchPage<SpotifyTrackObject>(
+      `/v1/albums/${albumId}/tracks`,
+      params,
     );
     for (const raw of page.items) {
       tracks.push({
@@ -175,9 +199,12 @@ export async function getAlbumTracks(
   return tracks;
 }
 
+/** Personalization endpoint, untouched by the catalog limit changes. */
+const RECENTLY_PLAYED_LIMIT = 50;
+
 export async function getRecentlyPlayed(): Promise<RecentlyPlayedItem[]> {
   const data = await spotifyFetch<{ items: RecentlyPlayedItem[] }>(
-    `/v1/me/player/recently-played?limit=${CATALOG_PAGE_SIZE}`,
+    `/v1/me/player/recently-played?limit=${RECENTLY_PLAYED_LIMIT}`,
   );
   return data.items;
 }
