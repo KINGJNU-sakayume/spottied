@@ -63,14 +63,19 @@ export function CoverImage({
         className,
       )}
     >
-      {placeholder && placeholder !== url && !loaded && (
-        <img
-          src={placeholder}
-          alt=""
-          aria-hidden
-          className="absolute inset-0 h-full w-full scale-110 object-cover blur-md"
-        />
-      )}
+      {!loaded &&
+        (placeholder && placeholder !== url ? (
+          <img
+            src={placeholder}
+            alt=""
+            aria-hidden
+            className="absolute inset-0 h-full w-full scale-110 object-cover blur-md"
+          />
+        ) : (
+          // No smaller image to blur up from — pulse rather than sit blank,
+          // which on a wall of covers looked like broken artwork.
+          <div className="absolute inset-0 animate-pulse bg-ink/[0.07]" aria-hidden />
+        ))}
       <img
         src={url}
         alt={alt}

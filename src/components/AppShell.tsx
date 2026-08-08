@@ -5,6 +5,7 @@ import { useUiStore } from '../store/uiStore';
 import { cn } from '../utils/cn';
 import { GearIcon, HomeIcon, SearchIcon, UserIcon, XIcon } from './Icons';
 import { NowDiggingBar } from './NowDiggingBar';
+import { ResumeSyncBanner } from './ResumeSyncBanner';
 import { ToastHost } from './Toast';
 
 const TABS = [
@@ -119,6 +120,7 @@ export function AppShell() {
       <NowDiggingBar />
       <TabBar />
       <ToastHost />
+      <ResumeSyncBanner />
       <AuthBanner />
     </div>
   );

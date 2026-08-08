@@ -25,6 +25,7 @@ import Settings from './pages/Settings';
 const Profile = lazy(() => import('./pages/Profile'));
 import { useArtistStore } from './store/artistStore';
 import { useLogStore } from './store/logStore';
+import { useRecentStore } from './store/recentStore';
 import { useUiStore } from './store/uiStore';
 
 function Root() {
@@ -35,6 +36,8 @@ function Root() {
   useEffect(() => {
     void useArtistStore.getState().loadAll();
     void useLogStore.getState().loadAll();
+    // Needed app-wide, not just on Home: the resume banner reads it too.
+    void useRecentStore.getState().loadCache();
     setAuthFailureHandler(() =>
       useUiStore.getState().setAuthNotice('Spotify 연결이 만료되었어요'),
     );

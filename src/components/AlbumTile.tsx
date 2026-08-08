@@ -9,6 +9,7 @@ import { getAlbumProgress, getAlbumTypeLabel } from '../utils/derive';
 import { releaseYear } from '../utils/format';
 import { useAlbumLinkState, useIsMobile } from '../utils/hooks';
 import type { TileRef } from '../utils/useLazyAlbumTracks';
+import { BackdateDialog } from './BackdateDialog';
 import { CoverImage } from './CoverImage';
 import { CheckIcon } from './Icons';
 import { OverflowMenu } from './OverflowMenu';
@@ -24,14 +25,12 @@ export function AlbumTile({
   tracks,
   accent,
   tileRef,
-  onBackdate,
 }: {
   album: Album;
   tracks: Track[];
   /** rgba string lifted from the artist header — extracting per tile is costly. */
   accent: string;
   tileRef?: TileRef;
-  onBackdate?: (album: Album) => void;
 }) {
   const markAlbumListened = useArtistStore((s) => s.markAlbumListened);
   const undoAlbumListened = useArtistStore((s) => s.undoAlbumListened);
@@ -39,12 +38,24 @@ export function AlbumTile({
   const updateAlbum = useArtistStore((s) => s.updateAlbum);
   const pushToast = useUiStore((s) => s.pushToast);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [backdateOpen, setBackdateOpen] = useState(false);
   const isMobile = useIsMobile();
   const linkState = useAlbumLinkState();
 
   const progress = getAlbumProgress(album, tracks);
   const remaining = Math.max(progress.total - progress.processed, 0);
   const untouched = progress.processed === 0;
+
+  const markAll = async (listenedAt?: string) => {
+    const snapshot = await markAlbumListened(album.id, listenedAt);
+    if (!snapshot) return;
+    pushToast(`${snapshot.createdEventIds.length}곡 청취 처리`, {
+      action: {
+        label: '실행 취소',
+        onClick: () => void undoAlbumListened(snapshot),
+      },
+    });
+  };
 
   const onToggleListened = async () => {
     if (progress.complete) {
@@ -60,14 +71,7 @@ export function AlbumTile({
       pushToast(`『${album.name}』 청취 기록을 해제했어요`);
       return;
     }
-    const snapshot = await markAlbumListened(album.id);
-    if (!snapshot) return;
-    pushToast(`${snapshot.createdEventIds.length}곡 청취 처리`, {
-      action: {
-        label: '실행 취소',
-        onClick: () => void undoAlbumListened(snapshot),
-      },
-    });
+    await markAll();
   };
 
   const badge = progress.complete ? (
@@ -152,14 +156,10 @@ export function AlbumTile({
             open={menuOpen}
             onOpenChange={setMenuOpen}
             items={[
-              ...(onBackdate
-                ? [
-                    {
-                      label: '다른 날짜로 기록',
-                      onSelect: () => onBackdate(album),
-                    },
-                  ]
-                : []),
+              {
+                label: '다른 날짜로 기록',
+                onSelect: () => setBackdateOpen(true),
+              },
               {
                 label: '목록에서 제외',
                 onSelect: () => void setAlbumExcluded(album.id, true),
@@ -178,6 +178,14 @@ export function AlbumTile({
         onChange={(v) => void updateAlbum(album.id, { rating: v })}
         className="mt-1"
       />
+
+      {backdateOpen && (
+        <BackdateDialog
+          title={album.name}
+          onConfirm={(listenedAt) => void markAll(listenedAt)}
+          onClose={() => setBackdateOpen(false)}
+        />
+      )}
     </div>
   );
 }

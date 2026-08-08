@@ -4,6 +4,7 @@ import { AmbientBackdrop } from '../components/AmbientBackdrop';
 import { CoverImage, pickImage } from '../components/CoverImage';
 import { ChevronDownIcon, PlayIcon, RefreshIcon } from '../components/Icons';
 import { ProgressBar } from '../components/ProgressBar';
+import { Skeleton } from '../components/Skeleton';
 import { SyncReviewSheet } from '../components/SyncReviewSheet';
 import { getLastExportAt } from '../db/backup';
 import { spotifyAlbumUrl } from '../lib/spotify/endpoints';
@@ -631,7 +632,19 @@ export default function Home() {
 
       <BackupReminder hasData={hasAny || events.length > 0} />
 
-      {!loaded ? null : !hasAny ? (
+      {!loaded ? (
+        <div className="space-y-8">
+          <Skeleton className="h-64 rounded-[26px] sm:h-52" />
+          <div className="grid grid-cols-3 gap-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i}>
+                <Skeleton className="aspect-square w-full" />
+                <Skeleton className="mt-1.5 h-3 w-3/4 rounded" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : !hasAny ? (
         <div className="mt-24 text-center">
           <p className="text-lg font-bold text-ink/80">
             아직 디깅 중인 아티스트가 없어요

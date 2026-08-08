@@ -10,6 +10,27 @@
 
 모든 데이터는 브라우저의 IndexedDB에만 저장됩니다. 서버도 계정도 없습니다.
 
+## 화면
+
+- **홈** — 오늘 요약 한 줄로 시작합니다. 가장 최근에 파던 아티스트가 큰 히어로 카드로,
+  나머지는 `다음 차례` 커버 그리드로 이어집니다. 그 아래로 최근 들은 앨범, 30일 이상
+  손대지 않은 `다시 파러 가기`, 로컬 평점만으로 뽑은 `취향에 맞을지도`, `작년 오늘`,
+  완주 아티스트, 그리고 완주한 앨범 커버를 빽빽하게 깐 **커버 월**이 옵니다.
+  **데이터가 없는 섹션은 아예 렌더되지 않습니다.**
+- **아티스트** — 디스코그래피가 연도별로 묶인 **커버 그리드**입니다(모바일 2열).
+  진행 상태는 커버 자체로 드러납니다: 미청취는 흐리고 채도가 빠진 상태, 진행 중은
+  남은 곡 수 배지와 진행 바, 완주는 체크. 그 배지를 한 번 누르면 앨범 전체가 청취
+  처리되고 **실행 취소** 토스트가 뜹니다. 별점은 그리드에서 바로 매길 수 있습니다.
+- **앨범** — 커버·별점·좋아요·진행률과 트랙 체크리스트. 메모를 남길 수 있습니다.
+- **프로필** — `로그 / 컬렉션 / 메모 / 통계`.
+  로그는 같은 날 같은 앨범을 한 줄로 접고, 삭제는 롱프레스로 꺼내며 실행 취소가 됩니다.
+  통계는 `최근 30일 / 올해 / 전체` 기간 필터에 전부 반응하고, 청취 히트맵·발매연도
+  분포·완주까지 남은 곡 랭킹 등을 보여줍니다. 메모 탭에서 모든 메모를 모아 봅니다.
+- **검색 / 설정** — 아티스트 추가, Spotify 연결, JSON 백업.
+
+Spotify에서 듣고 앱으로 돌아오면 최근 재생을 조용히 확인해
+`방금 N곡 들으셨네요 — 기록할까요?` 배너를 띄웁니다. 반영은 항상 사용자가 승인합니다.
+
 ## 디자인
 
 화이트 베이스 + **리퀴드 글라스**. 표면(카드·바·시트)은 반투명하게 뒤를 비추고
@@ -118,12 +139,26 @@ npm run build      # tsc --noEmit + vite build
 src/
 ├── lib/spotify/    # pkce.ts, client.ts(자동 갱신 + 429 대응), endpoints.ts
 ├── db/             # dexie.ts(스키마 버전 체인), backup.ts(내보내기/가져오기)
-├── store/          # artistStore, logStore, uiStore (Zustand)
-├── utils/derive.ts # 진행률·상태·이어듣기 지점 (순수 함수, 테스트 포함)
+├── store/          # artistStore, logStore, uiStore, recentStore (Zustand)
+├── utils/derive.ts # 진행률·상태·이어듣기·통계 파생 (순수 함수, 테스트 포함)
 ├── utils/color.ts  # 커버 아트 도미넌트 컬러 추출
-├── components/     # GlassCard, NowDiggingBar, StarRating, TrackRow, ...
+├── utils/fetchQueue.ts # 백그라운드 선반입 요청 수 제한 (테스트 포함)
+├── components/     # AlbumTile, ListenHeatmap, StarRating, TrackRow, ...
 └── pages/          # 홈 / 검색 / 아티스트 / 앨범 / 프로필 / 설정
 ```
+
+`recentlyPlayedCache`는 Dexie 버전 2로 추가된 **파생 캐시**입니다. 최근 재생 응답을
+오프라인에서도 보여주기 위한 것이라 JSON 백업에는 포함하지 않고(다른 계정의 기록을
+복원하게 되므로), 전체 삭제와 `전체 교체` 가져오기에서는 함께 비웁니다.
+
+### Spotify Web API 제약 (2026-02 기준)
+
+`/v1/recommendations`, `/v1/artists/{id}/related-artists`, `/v1/audio-features`,
+`/v1/artists/{id}/top-tracks`, `/v1/browse/new-releases`는 더 이상 쓸 수 없습니다.
+그래서 홈의 `취향에 맞을지도`를 포함한 **모든 추천은 IndexedDB에 이미 있는 데이터
+(추가한 아티스트의 디스코그래피 + 사용자의 평점·좋아요·청취 기록)로만 파생**합니다.
+`artist.genres`도 deprecated되어 신규 아티스트는 빈 배열이 오므로 장르 기반 UI는
+쓰지 않습니다.
 
 v2 업적 시스템 설계는 [docs/v2-achievements.md](docs/v2-achievements.md)에
 기록되어 있습니다 (v1에서는 구현하지 않음).

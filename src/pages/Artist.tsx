@@ -7,6 +7,7 @@ import { ChevronDownIcon, ChevronLeftIcon } from '../components/Icons';
 import { OverflowMenu, type OverflowMenuItem } from '../components/OverflowMenu';
 import { ProgressBar } from '../components/ProgressBar';
 import { StatusBadge } from '../components/StatusBadge';
+import { AlbumGridSkeleton, Skeleton } from '../components/Skeleton';
 import { SyncReviewSheet } from '../components/SyncReviewSheet';
 import { spotifyArtistUrl } from '../lib/spotify/endpoints';
 import { useArtistStore } from '../store/artistStore';
@@ -82,7 +83,23 @@ export default function ArtistPage() {
     enabled: online && connected,
   });
 
-  if (!loaded) return null;
+  // Skeleton rather than null: the store resolves in a frame or two, and a
+  // blank white page in between reads as a broken navigation.
+  if (!loaded) {
+    return (
+      <div>
+        <div className="mb-5 flex items-end gap-4">
+          <Skeleton className="h-24 w-24 rounded-[22px] md:h-28 md:w-28" />
+          <div className="flex-1 pb-2">
+            <Skeleton className="h-7 w-2/3 rounded" />
+            <Skeleton className="mt-2 h-4 w-20 rounded-full" />
+          </div>
+        </div>
+        <Skeleton className="mb-5 h-1.5 w-full rounded-full" />
+        <AlbumGridSkeleton />
+      </div>
+    );
+  }
   if (!artist) {
     return (
       <div className="mt-24 text-center text-sm text-ink/50">
