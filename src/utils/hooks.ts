@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, type Location } from 'react-router-dom';
 import { useArtistStore } from '../store/artistStore';
 import type { Track } from '../types';
 import type { TracksByAlbum } from './derive';
@@ -49,6 +49,17 @@ export function useTracksByAlbum(): TracksByAlbum {
  * Navigates to /album/:id. On mobile the album route renders as a bottom
  * sheet over the current page (real route — back/edge-swipe closes it).
  */
+/**
+ * The `state` a <Link> to /album/:id needs to get the same mobile bottom-sheet
+ * presentation useOpenAlbum gives, while staying a real anchor (keyboard,
+ * middle-click, focus order).
+ */
+export function useAlbumLinkState(): { background: Location } | undefined {
+  const location = useLocation();
+  const isMobile = useIsMobile();
+  return isMobile ? { background: location } : undefined;
+}
+
 export function useOpenAlbum(): (albumId: string) => void {
   const navigate = useNavigate();
   const location = useLocation();

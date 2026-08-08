@@ -56,26 +56,33 @@ export function NowDiggingBar() {
 
   return (
     <div className="glass-bar fixed inset-x-3 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-30 overflow-hidden rounded-[20px] lg:bottom-4 lg:left-[15rem] lg:right-4">
-      <Link to={`/artist/${artist.id}`} className="flex items-center gap-3 p-2 pr-3">
-        <CoverImage
-          images={rp.album.images}
-          alt={rp.album.name}
-          sizePx={40}
-          rounded="rounded-lg"
-          className="w-10 shadow-sm"
-        />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold">
-            {artist.name}
-            <span className="font-normal text-ink/45">
-              {' — '}
-              {rp.track ? rp.track.name : rp.album.name}
-            </span>
-          </p>
-          <p className="truncate text-xs text-ink/40">
-            {progress.processed}/{progress.total} · {rp.album.name}
-          </p>
-        </div>
+      {/* The play link is a sibling of the artist link, not a child: an <a>
+          inside an <a> is invalid and browsers unnest it unpredictably. */}
+      <div className="flex items-center gap-3 p-2 pr-3">
+        <Link
+          to={`/artist/${artist.id}`}
+          className="flex min-w-0 flex-1 items-center gap-3"
+        >
+          <CoverImage
+            images={rp.album.images}
+            alt={rp.album.name}
+            sizePx={40}
+            rounded="rounded-lg"
+            className="w-10 shadow-sm"
+          />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">
+              {artist.name}
+              <span className="font-normal text-ink/45">
+                {' — '}
+                {rp.track ? rp.track.name : rp.album.name}
+              </span>
+            </p>
+            <p className="truncate text-xs text-ink/40">
+              {progress.processed}/{progress.total} · {rp.album.name}
+            </p>
+          </div>
+        </Link>
         <a
           href={spotifyAlbumUrl(rp.album.id)}
           target="_blank"
@@ -83,11 +90,10 @@ export function NowDiggingBar() {
           aria-label="이어서 듣기 (Spotify에서 열기)"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white shadow-md ring-1 ring-inset ring-white/25 transition-transform active:scale-95"
           style={{ background: rgba(accent, 1) }}
-          onClick={(e) => e.stopPropagation()}
         >
           <PlayIcon size={16} className="translate-x-[1px]" />
         </a>
-      </Link>
+      </div>
       <div className="absolute inset-x-0 top-0 h-[3px] bg-ink/[0.08]">
         <div
           className="h-full transition-[width] duration-300 ease-out"

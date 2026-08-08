@@ -3,7 +3,6 @@ import type { PointerEvent } from 'react';
 import { useArtistStore } from '../store/artistStore';
 import type { Track } from '../types';
 import { cn } from '../utils/cn';
-import { formatDurationMs } from '../utils/format';
 import { CheckIcon, CircleIcon, HeartIcon, SkipIcon } from './Icons';
 import { OverflowMenu, type OverflowMenuItem } from './OverflowMenu';
 import { StarRating } from './StarRating';
@@ -96,7 +95,7 @@ export function TrackRow({ track }: { track: Track }) {
 
   return (
     <div className="border-b border-ink/[0.07] py-2 last:border-b-0">
-      <div className="flex items-center gap-2.5">
+      <div className="flex items-center gap-2">
         <span className="w-6 shrink-0 text-right text-sm tabular-nums text-ink/35">
           {track.trackNumber}
         </span>
@@ -111,23 +110,25 @@ export function TrackRow({ track }: { track: Track }) {
           >
             {track.name}
           </p>
-          {/* Rating lives on the meta line so long titles keep their room. */}
-          <div className="mt-1 flex items-center gap-2.5">
-            <span className="text-xs tabular-nums text-ink/40">
-              {formatDurationMs(track.durationMs)}
-            </span>
-            <StarRating
-              size={12}
-              value={track.rating}
-              onChange={(v) => void updateTrack(track.id, { rating: v })}
-            />
-          </div>
           {track.note && (
             <p className="mt-0.5 truncate text-xs italic text-ink/40">
               “{track.note}”
             </p>
           )}
         </div>
+
+        {/*
+          Rating gets its own fixed column instead of sharing a meta line with
+          the runtime. The runtime is gone: in a digging tracker it carries
+          almost no information, and the space it held is what makes a
+          touchable 16px star row fit.
+        */}
+        <StarRating
+          size={16}
+          value={track.rating}
+          onChange={(v) => void updateTrack(track.id, { rating: v })}
+          className="shrink-0"
+        />
 
         <button
           type="button"
