@@ -1,5 +1,8 @@
 import { CheckIcon } from './Icons';
 
+/** Tailwind emerald-500 — the shared "완료" colour. */
+const COMPLETE_COLOR = '#10b981';
+
 export function ProgressRing({
   ratio,
   complete,
@@ -16,7 +19,11 @@ export function ProgressRing({
   const r = (size - strokeWidth) / 2;
   const c = 2 * Math.PI * r;
   const clamped = Math.min(1, Math.max(0, ratio));
-  const color = accent ?? 'rgba(29,29,31,0.75)';
+  // Cover accent tracks progress; completion is always the same green, so a
+  // finished album reads the same regardless of its artwork.
+  const color = complete
+    ? COMPLETE_COLOR
+    : (accent ?? 'rgba(29,29,31,0.75)');
   return (
     <div
       className="relative shrink-0"

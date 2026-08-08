@@ -28,6 +28,12 @@ interface ArtistState {
   tracks: Record<string, Track>;
   loadingTrackAlbums: Record<string, boolean>;
   importingArtistIds: Record<string, boolean>;
+  /**
+   * The listen event created by the most recent manual mark, so untoggling
+   * that same track removes exactly the event the tap created — and never
+   * an older, genuine listen.
+   */
+  lastManualListen: { trackId: string; eventId: string } | null;
 
   loadAll: () => Promise<void>;
   addArtist: (spotifyArtist: api.SpotifyArtistObject) => Promise<void>;
@@ -99,6 +105,7 @@ export const useArtistStore = create<ArtistState>((set, get) => {
     tracks: {},
     loadingTrackAlbums: {},
     importingArtistIds: {},
+    lastManualListen: null,
 
     loadAll: async () => {
       const [artists, albums, tracks] = await Promise.all([
@@ -281,6 +288,9 @@ export const useArtistStore = create<ArtistState>((set, get) => {
         source: opts.source ?? 'manual',
       };
       await useLogStore.getState().addEvent(event);
+      if (event.source === 'manual') {
+        set({ lastManualListen: { trackId, eventId: event.id } });
+      }
       if (track.status === 'listened') {
         useUiStore.getState().pushToast('재청취를 기록했어요');
       }
@@ -294,6 +304,14 @@ export const useArtistStore = create<ArtistState>((set, get) => {
       const updated: Track = { ...track, status };
       await db.tracks.put(updated);
       set((s) => ({ tracks: { ...s.tracks, [trackId]: updated } }));
+
+      // Undoing a just-made mark also retracts the event it logged, so a
+      // mis-tap leaves nothing behind in the diary or the stats.
+      const pending = get().lastManualListen;
+      if (status === 'none' && pending?.trackId === trackId) {
+        await useLogStore.getState().removeEvent(pending.eventId);
+        set({ lastManualListen: null });
+      }
       toastOnNewCompletion(before);
     },
 

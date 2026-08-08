@@ -204,7 +204,7 @@ function AlbumContent({ albumId }: { albumId: string }) {
             </p>
           ) : (
             sortTracks(tracks).map((t) => (
-              <TrackRow key={t.id} track={t} accent={rgba(accent, 0.95)} />
+              <TrackRow key={t.id} track={t} />
             ))
           )}
         </div>

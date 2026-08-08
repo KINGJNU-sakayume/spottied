@@ -7,7 +7,8 @@ import { releaseYear } from '../utils/format';
 import { useOpenAlbum } from '../utils/hooks';
 import { spotifyAlbumUrl } from '../lib/spotify/endpoints';
 import { CoverImage } from './CoverImage';
-import { ChevronDownIcon, DotsIcon } from './Icons';
+import { ChevronDownIcon } from './Icons';
+import { OverflowMenu } from './OverflowMenu';
 import { ProgressRing } from './ProgressRing';
 import { StarRating } from './StarRating';
 import { TrackRow } from './TrackRow';
@@ -89,55 +90,23 @@ export function AlbumRow({
           )}
         />
 
-        <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
-          <button
-            type="button"
-            aria-label="앨범 메뉴"
-            className="flex h-8 w-6 items-center justify-center text-ink/30 hover:text-ink/60"
-            onClick={() => setMenuOpen((v) => !v)}
-          >
-            <DotsIcon size={16} />
-          </button>
-          {menuOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-20"
-                onClick={() => setMenuOpen(false)}
-                aria-hidden
-              />
-              <div className="glass-bar fade-in absolute right-0 top-8 z-30 w-48 overflow-hidden rounded-2xl py-1 text-sm">
-                <button
-                  type="button"
-                  className="block w-full px-4 py-2.5 text-left hover:bg-ink/[0.05]"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    void markAlbumListened(album.id);
-                  }}
-                >
-                  전부 청취 처리
-                </button>
-                <button
-                  type="button"
-                  className="block w-full px-4 py-2.5 text-left hover:bg-ink/[0.05]"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    void setAlbumExcluded(album.id, true);
-                  }}
-                >
-                  목록에서 제외
-                </button>
-                <a
-                  href={spotifyAlbumUrl(album.id)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block w-full px-4 py-2.5 text-left hover:bg-ink/[0.05]"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  Spotify에서 열기
-                </a>
-              </div>
-            </>
-          )}
+        <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
+          <OverflowMenu
+            label="앨범 메뉴"
+            open={menuOpen}
+            onOpenChange={setMenuOpen}
+            items={[
+              {
+                label: '전부 청취 처리',
+                onSelect: () => void markAlbumListened(album.id),
+              },
+              {
+                label: '목록에서 제외',
+                onSelect: () => void setAlbumExcluded(album.id, true),
+              },
+              { label: 'Spotify에서 열기', href: spotifyAlbumUrl(album.id) },
+            ]}
+          />
         </div>
       </div>
 
@@ -154,7 +123,7 @@ export function AlbumRow({
           ) : (
             <>
               {sortTracks(tracks).map((t) => (
-                <TrackRow key={t.id} track={t} accent={accent} />
+                <TrackRow key={t.id} track={t} />
               ))}
               {!progress.complete && (
                 <button

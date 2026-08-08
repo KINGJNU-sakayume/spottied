@@ -51,6 +51,26 @@ export function PlayIcon({ size, className }: IconProps) {
   );
 }
 
+/** Unchecked affordance for the track status control. */
+export function CircleIcon({ size, className }: IconProps) {
+  return (
+    <svg {...base(size)} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="8.5" />
+    </svg>
+  );
+}
+
+export function RepeatIcon({ size, className }: IconProps) {
+  return (
+    <svg {...base(size)} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 2.5 20.5 6 17 9.5" />
+      <path d="M20.5 6H7a3.5 3.5 0 0 0-3.5 3.5V11" />
+      <path d="m7 21.5-3.5-3.5L7 14.5" />
+      <path d="M3.5 18H17a3.5 3.5 0 0 0 3.5-3.5V13" />
+    </svg>
+  );
+}
+
 export function CheckIcon({ size, className }: IconProps) {
   return (
     <svg {...base(size)} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">

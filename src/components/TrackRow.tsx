@@ -4,15 +4,17 @@ import { useArtistStore } from '../store/artistStore';
 import type { Track } from '../types';
 import { cn } from '../utils/cn';
 import { formatDurationMs } from '../utils/format';
-import { CheckIcon, DotsIcon, HeartIcon, PlayIcon, SkipIcon } from './Icons';
+import { CheckIcon, CircleIcon, HeartIcon, SkipIcon } from './Icons';
+import { OverflowMenu, type OverflowMenuItem } from './OverflowMenu';
 import { StarRating } from './StarRating';
 
 /**
- * Per-track digging controls: status (tap cycles 미청취→청취; re-tap logs a
- * re-listen; long-press or the overflow menu for skip/revert), heart,
- * half-star rating and a free-text note.
+ * Per-track digging controls. The status control is a checkbox, not a
+ * transport control: tapping toggles 미청취 ↔ 청취 so a mis-tap undoes
+ * itself. Deliberate re-listens live in the overflow menu, alongside skip,
+ * revert and the note editor (also reachable by long-press).
  */
-export function TrackRow({ track, accent }: { track: Track; accent?: string }) {
+export function TrackRow({ track }: { track: Track }) {
   const markListened = useArtistStore((s) => s.markListened);
   const setTrackStatus = useArtistStore((s) => s.setTrackStatus);
   const updateTrack = useArtistStore((s) => s.updateTrack);
@@ -28,7 +30,12 @@ export function TrackRow({ track, accent }: { track: Track; accent?: string }) {
       longPressed.current = false;
       return;
     }
-    void markListened(track.id);
+    // Toggle, so an accidental tap is undone by tapping again.
+    if (track.status === 'listened') {
+      void setTrackStatus(track.id, 'none');
+    } else {
+      void markListened(track.id);
+    }
   };
 
   const startLongPress = (e: PointerEvent) => {
@@ -55,6 +62,37 @@ export function TrackRow({ track, accent }: { track: Track; accent?: string }) {
 
   const listened = track.status === 'listened';
   const skipped = track.status === 'skipped';
+
+  const menuItems: OverflowMenuItem[] = [
+    // Tapping the checkbox now toggles, so a deliberate re-listen needs its
+    // own explicit action.
+    ...(listened
+      ? [{ label: '재청취 기록', onSelect: () => void markListened(track.id) }]
+      : []),
+    ...(skipped
+      ? []
+      : [
+          {
+            label: '스킵 처리',
+            onSelect: () => void setTrackStatus(track.id, 'skipped'),
+          },
+        ]),
+    ...(track.status === 'none'
+      ? []
+      : [
+          {
+            label: '미청취로 되돌리기',
+            onSelect: () => void setTrackStatus(track.id, 'none'),
+          },
+        ]),
+    {
+      label: track.note ? '메모 수정' : '메모 추가',
+      onSelect: () => {
+        setNoteDraft(track.note ?? '');
+        setNoteOpen(true);
+      },
+    },
+  ];
 
   return (
     <div className="border-b border-ink/[0.07] py-2 last:border-b-0">
@@ -109,16 +147,17 @@ export function TrackRow({ track, accent }: { track: Track; accent?: string }) {
 
         <button
           type="button"
-          aria-label={listened ? '재청취 기록' : '청취 처리'}
+          role="checkbox"
+          aria-checked={listened}
+          aria-label={listened ? '청취 취소' : '청취 처리'}
           className={cn(
-            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full shadow-sm ring-1 ring-inset transition-all duration-200 active:scale-95',
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-200 active:scale-95',
             listened
-              ? 'text-white ring-white/25'
+              ? 'bg-emerald-500 text-white shadow-sm ring-1 ring-inset ring-white/25'
               : skipped
-                ? 'bg-ink/[0.06] text-ink/30 ring-ink/[0.06]'
-                : 'bg-white/80 text-ink/55 ring-ink/[0.08] hover:bg-white',
+                ? 'bg-ink/[0.06] text-ink/30 ring-1 ring-inset ring-ink/[0.06]'
+                : 'text-ink/30 hover:text-ink/55',
           )}
-          style={listened ? { background: accent ?? 'rgba(29,29,31,0.85)' } : undefined}
           onClick={onStatusTap}
           onPointerDown={startLongPress}
           onPointerUp={cancelLongPress}
@@ -134,66 +173,16 @@ export function TrackRow({ track, accent }: { track: Track; accent?: string }) {
           ) : skipped ? (
             <SkipIcon size={14} />
           ) : (
-            <PlayIcon size={13} className="translate-x-[1px]" />
+            <CircleIcon size={20} />
           )}
         </button>
 
-        <div className="relative shrink-0">
-          <button
-            type="button"
-            aria-label="트랙 메뉴"
-            className="flex h-8 w-6 items-center justify-center text-ink/30 hover:text-ink/60"
-            onClick={() => setMenuOpen((v) => !v)}
-          >
-            <DotsIcon size={16} />
-          </button>
-          {menuOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-20"
-                onClick={() => setMenuOpen(false)}
-                aria-hidden
-              />
-              <div className="glass-bar fade-in absolute right-0 top-8 z-30 w-44 overflow-hidden rounded-2xl py-1 text-sm">
-                {!skipped && (
-                  <button
-                    type="button"
-                    className="block w-full px-4 py-2.5 text-left hover:bg-ink/[0.05]"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      void setTrackStatus(track.id, 'skipped');
-                    }}
-                  >
-                    스킵 처리
-                  </button>
-                )}
-                {track.status !== 'none' && (
-                  <button
-                    type="button"
-                    className="block w-full px-4 py-2.5 text-left hover:bg-ink/[0.05]"
-                    onClick={() => {
-                      setMenuOpen(false);
-                      void setTrackStatus(track.id, 'none');
-                    }}
-                  >
-                    미청취로 되돌리기
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className="block w-full px-4 py-2.5 text-left hover:bg-ink/[0.05]"
-                  onClick={() => {
-                    setMenuOpen(false);
-                    setNoteDraft(track.note ?? '');
-                    setNoteOpen(true);
-                  }}
-                >
-                  {track.note ? '메모 수정' : '메모 추가'}
-                </button>
-              </div>
-            </>
-          )}
-        </div>
+        <OverflowMenu
+          label="트랙 메뉴"
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
+          items={menuItems}
+        />
       </div>
 
       {noteOpen && (
