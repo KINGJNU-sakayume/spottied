@@ -40,12 +40,16 @@ const TABS = [
 type TabKey = (typeof TABS)[number]['key'];
 
 const CHART_TOOLTIP_STYLE = {
-  background: 'rgba(20,20,26,0.95)',
-  border: '1px solid rgba(255,255,255,0.1)',
-  borderRadius: 12,
+  background: 'rgba(255,255,255,0.92)',
+  border: '1px solid rgba(255,255,255,0.9)',
+  borderRadius: 14,
+  boxShadow: '0 8px 24px -6px rgba(16,18,27,0.18)',
   fontSize: 12,
-  color: '#fff',
+  color: '#1d1d1f',
 } as const;
+
+const AXIS_TICK = { fill: 'rgba(29,29,31,0.4)', fontSize: 10 } as const;
+const CHART_CURSOR = { fill: 'rgba(29,29,31,0.05)' } as const;
 
 function LogTab() {
   const events = useLogStore((s) => s.events);
@@ -80,20 +84,18 @@ function LogTab() {
       <select
         value={artistFilter}
         onChange={(e) => setArtistFilter(e.target.value)}
-        className="glass mb-4 w-full appearance-none rounded-xl bg-transparent px-4 py-2.5 text-sm outline-none"
+        className="glass-inset mb-4 w-full appearance-none rounded-[18px] px-4 py-2.5 text-sm font-medium outline-none"
       >
-        <option value="" className="bg-elev">
-          모든 아티스트
-        </option>
+        <option value="">모든 아티스트</option>
         {trackedArtists.map((a) => (
-          <option key={a.id} value={a.id} className="bg-elev">
+          <option key={a.id} value={a.id}>
             {a.name}
           </option>
         ))}
       </select>
 
       {grouped.length === 0 && (
-        <p className="py-16 text-center text-sm text-white/40">
+        <p className="py-16 text-center text-sm text-ink/40">
           아직 청취 기록이 없어요
         </p>
       )}
@@ -101,10 +103,10 @@ function LogTab() {
       <div className="space-y-6">
         {grouped.map(([day, dayEvents]) => (
           <section key={day}>
-            <h3 className="mb-2 text-xs font-semibold text-white/45">
+            <h3 className="mb-2 text-xs font-bold text-ink/45">
               {formatDayHeading(day)}
             </h3>
-            <div className="glass divide-y divide-white/5 rounded-2xl">
+            <div className="glass divide-y divide-ink/[0.07] rounded-[22px]">
               {dayEvents.map((e) => {
                 const track = tracks[e.trackId];
                 const album = albums[e.albumId];
@@ -116,21 +118,22 @@ function LogTab() {
                         images={album.images}
                         alt={album.name}
                         sizePx={40}
+                        rounded="rounded-lg"
                         className="w-10 shrink-0"
                       />
                     ) : (
-                      <div className="h-10 w-10 shrink-0 rounded-lg bg-white/5" />
+                      <div className="h-10 w-10 shrink-0 rounded-lg bg-ink/[0.06]" />
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm">
                         {track?.name ?? '(삭제된 트랙)'}
                       </p>
-                      <p className="truncate text-xs text-white/45">
+                      <p className="truncate text-xs text-ink/45">
                         {artist?.name ?? ''}
                       </p>
                     </div>
                     <span
-                      className="shrink-0 text-white/35"
+                      className="shrink-0 text-ink/30"
                       title={e.source === 'manual' ? '수동 기록' : 'Spotify 동기화'}
                     >
                       {e.source === 'manual' ? (
@@ -139,13 +142,13 @@ function LogTab() {
                         <RefreshIcon size={13} />
                       )}
                     </span>
-                    <span className="shrink-0 text-xs tabular-nums text-white/40">
+                    <span className="shrink-0 text-xs tabular-nums text-ink/40">
                       {formatTime(e.listenedAt)}
                     </span>
                     <button
                       type="button"
                       aria-label="기록 삭제"
-                      className="shrink-0 p-1 text-white/25 hover:text-white/70"
+                      className="shrink-0 p-1 text-ink/20 hover:text-ink/60"
                       onClick={() => void removeEvent(e.id)}
                     >
                       <XIcon size={14} />
@@ -227,7 +230,7 @@ function CollectionTab() {
 
   return (
     <div>
-      <div className="mb-4 inline-flex rounded-full bg-white/5 p-1">
+      <div className="glass-inset mb-4 inline-flex rounded-full p-1">
         {(
           [
             { key: 'liked', label: '좋아요' },
@@ -238,8 +241,10 @@ function CollectionTab() {
             key={key}
             type="button"
             className={cn(
-              'rounded-full px-4 py-1.5 text-sm font-medium transition-colors',
-              mode === key ? 'bg-white text-black' : 'text-white/50 hover:text-white/80',
+              'rounded-full px-4 py-1.5 text-sm font-semibold transition-all duration-200',
+              mode === key
+                ? 'bg-ink text-white shadow-sm'
+                : 'text-ink/45 hover:text-ink/75',
             )}
             onClick={() => setMode(key)}
           >
@@ -249,7 +254,7 @@ function CollectionTab() {
       </div>
 
       {items.length === 0 && (
-        <p className="py-16 text-center text-sm text-white/40">
+        <p className="py-16 text-center text-sm text-ink/40">
           {mode === 'liked' ? '좋아요한 항목이 없어요' : '평가한 항목이 없어요'}
         </p>
       )}
@@ -265,7 +270,7 @@ function CollectionTab() {
             <button
               key={item.key}
               type="button"
-              className="text-left"
+              className="text-left transition-transform duration-150 active:scale-95"
               onClick={() => targetAlbumId && openAlbum(targetAlbumId)}
             >
               {item.album ? (
@@ -273,13 +278,13 @@ function CollectionTab() {
                   images={item.album.images}
                   alt={name}
                   sizePx={120}
-                  className="w-full"
+                  className="w-full shadow-md"
                 />
               ) : (
-                <div className="aspect-square w-full rounded-lg bg-white/5" />
+                <div className="aspect-square w-full rounded-xl bg-ink/[0.06]" />
               )}
-              <p className="mt-1.5 truncate text-xs text-white/80">{name}</p>
-              <p className="truncate text-[11px] text-white/40">
+              <p className="mt-1.5 truncate text-xs font-medium text-ink/80">{name}</p>
+              <p className="truncate text-[11px] text-ink/40">
                 {item.track ? `${sub} · 트랙` : sub}
               </p>
               {item.rating != null && (
@@ -327,34 +332,40 @@ function StatsTab() {
           { label: '청취 이벤트', value: stats.totalEvents },
           { label: '최장 연속 청취일', value: stats.streak.longest },
         ].map(({ label, value }) => (
-          <div key={label} className="glass rounded-2xl p-4">
+          <div key={label} className="glass rounded-[22px] p-4">
             <p className="text-2xl font-bold tabular-nums">{value}</p>
-            <p className="mt-0.5 text-xs text-white/50">{label}</p>
+            <p className="mt-0.5 text-xs text-ink/50">{label}</p>
           </div>
         ))}
       </div>
 
-      <section className="glass rounded-2xl p-4">
-        <h3 className="mb-3 text-sm font-semibold text-white/70">월별 청취</h3>
+      <section className="glass rounded-[22px] p-4">
+        <h3 className="mb-3 text-sm font-bold text-ink/70">월별 청취</h3>
         <ResponsiveContainer width="100%" height={170}>
           <BarChart data={stats.byMonth} margin={{ top: 4, right: 0, left: 0, bottom: 0 }}>
             <XAxis
               dataKey="month"
-              tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 10 }}
+              tick={AXIS_TICK}
               tickFormatter={(m: string) => m.slice(5)}
               axisLine={false}
               tickLine={false}
               interval={1}
             />
             <YAxis hide />
-            <Tooltip contentStyle={CHART_TOOLTIP_STYLE} cursor={{ fill: 'rgba(255,255,255,0.06)' }} />
-            <Bar dataKey="count" name="청취" fill="rgba(255,255,255,0.75)" radius={[4, 4, 0, 0]} />
+            <Tooltip contentStyle={CHART_TOOLTIP_STYLE} cursor={CHART_CURSOR} />
+            <Bar
+              dataKey="count"
+              name="청취"
+              fill="#fa2d48"
+              radius={[5, 5, 0, 0]}
+              isAnimationActive={false}
+            />
           </BarChart>
         </ResponsiveContainer>
       </section>
 
-      <section className="glass rounded-2xl p-4">
-        <h3 className="mb-3 text-sm font-semibold text-white/70">평점 분포</h3>
+      <section className="glass rounded-[22px] p-4">
+        <h3 className="mb-3 text-sm font-bold text-ink/70">평점 분포</h3>
         <ResponsiveContainer width="100%" height={150}>
           <BarChart
             data={stats.ratings}
@@ -362,33 +373,39 @@ function StatsTab() {
           >
             <XAxis
               dataKey="rating"
-              tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 10 }}
+              tick={AXIS_TICK}
               axisLine={false}
               tickLine={false}
             />
             <YAxis hide />
-            <Tooltip contentStyle={CHART_TOOLTIP_STYLE} cursor={{ fill: 'rgba(255,255,255,0.06)' }} />
-            <Bar dataKey="count" name="개수" fill="rgba(251,191,36,0.8)" radius={[4, 4, 0, 0]} />
+            <Tooltip contentStyle={CHART_TOOLTIP_STYLE} cursor={CHART_CURSOR} />
+            <Bar
+              dataKey="count"
+              name="개수"
+              fill="#f59e0b"
+              radius={[5, 5, 0, 0]}
+              isAnimationActive={false}
+            />
           </BarChart>
         </ResponsiveContainer>
       </section>
 
       {stats.genres.length > 0 && (
-        <section className="glass rounded-2xl p-4">
-          <h3 className="mb-3 text-sm font-semibold text-white/70">장르 분포</h3>
+        <section className="glass rounded-[22px] p-4">
+          <h3 className="mb-3 text-sm font-bold text-ink/70">장르 분포</h3>
           <div className="space-y-2">
             {stats.genres.map((g) => (
               <div key={g.genre} className="flex items-center gap-2.5">
-                <span className="w-28 shrink-0 truncate text-xs text-white/60">
+                <span className="w-28 shrink-0 truncate text-xs text-ink/60">
                   {g.genre}
                 </span>
-                <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/10">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-ink/[0.08]">
                   <div
-                    className="h-full rounded-full bg-white/70"
+                    className="h-full rounded-full bg-rose-500/80"
                     style={{ width: `${(g.count / maxGenre) * 100}%` }}
                   />
                 </div>
-                <span className="w-5 shrink-0 text-right text-xs tabular-nums text-white/40">
+                <span className="w-5 shrink-0 text-right text-xs tabular-nums text-ink/40">
                   {g.count}
                 </span>
               </div>
@@ -398,16 +415,16 @@ function StatsTab() {
       )}
 
       {stats.relistened.length > 0 && (
-        <section className="glass rounded-2xl p-4">
-          <h3 className="mb-3 text-sm font-semibold text-white/70">최다 재청취</h3>
+        <section className="glass rounded-[22px] p-4">
+          <h3 className="mb-3 text-sm font-bold text-ink/70">최다 재청취</h3>
           <ol className="space-y-2">
             {stats.relistened.map(({ track, count }, i) => (
               <li key={track.id} className="flex items-center gap-3 text-sm">
-                <span className="w-5 shrink-0 text-center font-bold text-white/30">
+                <span className="w-5 shrink-0 text-center font-bold text-ink/25">
                   {i + 1}
                 </span>
                 <span className="min-w-0 flex-1 truncate">{track.name}</span>
-                <span className="shrink-0 text-xs tabular-nums text-white/45">
+                <span className="shrink-0 text-xs tabular-nums text-ink/45">
                   {count}회
                 </span>
               </li>
@@ -463,7 +480,7 @@ export default function Profile() {
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">프로필</h1>
+      <h1 className="mb-4 text-[28px] font-bold tracking-tight">프로필</h1>
 
       <ProfileHeader
         totalListenedTracks={header.totalListenedTracks}
@@ -478,16 +495,16 @@ export default function Profile() {
         }}
       />
 
-      <div className="mb-5 flex gap-1 border-b border-white/10">
+      <div className="glass-inset mb-5 inline-flex rounded-full p-1">
         {TABS.map(({ key, label }) => (
           <button
             key={key}
             type="button"
             className={cn(
-              '-mb-px border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
+              'rounded-full px-4 py-1.5 text-sm font-semibold transition-all duration-200',
               tab === key
-                ? 'border-white text-white'
-                : 'border-transparent text-white/45 hover:text-white/75',
+                ? 'bg-ink text-white shadow-sm'
+                : 'text-ink/45 hover:text-ink/75',
             )}
             onClick={() => setSearchParams({ tab: key })}
           >

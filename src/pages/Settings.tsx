@@ -78,21 +78,21 @@ export default function Settings() {
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">설정</h1>
+      <h1 className="mb-4 text-[28px] font-bold tracking-tight">설정</h1>
 
       <div className="space-y-4">
         <GlassCard className="p-4">
-          <h2 className="mb-1 text-sm font-semibold">Spotify</h2>
-          <p className="mb-3 text-xs text-white/45">
+          <h2 className="mb-1 text-sm font-bold">Spotify</h2>
+          <p className="mb-3 text-xs text-ink/45">
             검색·디스코그래피 가져오기·동기화에만 사용돼요. 연결 없이도 저장된
             데이터는 모두 사용할 수 있어요.
           </p>
           {connected ? (
             <div className="flex items-center gap-3">
-              <span className="text-sm text-emerald-300">연결됨</span>
+              <span className="text-sm font-semibold text-emerald-600">연결됨</span>
               <button
                 type="button"
-                className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium hover:bg-white/20"
+                className="glass-inset rounded-full px-4 py-2 text-sm font-semibold text-ink/70 hover:text-ink"
                 onClick={() => {
                   disconnectSpotify();
                   refreshConnected();
@@ -108,34 +108,34 @@ export default function Settings() {
               type="button"
               disabled={!online}
               title={online ? undefined : '오프라인'}
-              className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black disabled:opacity-40"
+              className="rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white transition-transform active:scale-95 disabled:opacity-40"
               onClick={() => void beginLogin()}
             >
               Spotify 연결
             </button>
           )}
-          <p className="mt-3 break-all text-[11px] text-white/30">
+          <p className="mt-3 break-all text-[11px] text-ink/30">
             Redirect URI: {getRedirectUri()}
           </p>
         </GlassCard>
 
         <GlassCard className="p-4">
-          <h2 className="mb-1 text-sm font-semibold">백업</h2>
-          <p className="mb-3 text-xs text-white/45">
+          <h2 className="mb-1 text-sm font-bold">백업</h2>
+          <p className="mb-3 text-xs text-ink/45">
             모든 데이터는 이 브라우저에만 저장돼요. 브라우저 데이터를 지우면 기록도
             사라지니 주기적으로 내보내 주세요.
           </p>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium hover:bg-white/20"
+              className="glass-inset rounded-full px-4 py-2 text-sm font-semibold text-ink/70 hover:text-ink"
               onClick={() => void onExport()}
             >
               JSON 내보내기
             </button>
             <button
               type="button"
-              className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium hover:bg-white/20"
+              className="glass-inset rounded-full px-4 py-2 text-sm font-semibold text-ink/70 hover:text-ink"
               onClick={() => fileInputRef.current?.click()}
             >
               JSON 가져오기
@@ -154,33 +154,33 @@ export default function Settings() {
           </div>
 
           {pendingBackup && (
-            <div className="fade-in mt-4 rounded-xl bg-white/5 p-3">
+            <div className="glass-inset fade-in mt-4 rounded-[18px] p-3">
               <p className="text-sm">
                 아티스트 {pendingBackup.artists.length} · 앨범{' '}
                 {pendingBackup.albums.length} · 트랙 {pendingBackup.tracks.length} ·
                 청취 기록 {pendingBackup.listenEvents.length}
               </p>
-              <p className="mt-0.5 text-xs text-white/40">
+              <p className="mt-0.5 text-xs text-ink/40">
                 내보낸 시각: {pendingBackup.exportedAt}
               </p>
               <div className="mt-3 flex gap-2">
                 <button
                   type="button"
-                  className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-black"
+                  className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white transition-transform active:scale-95"
                   onClick={() => void onImport('merge')}
                 >
                   병합
                 </button>
                 <button
                   type="button"
-                  className="rounded-full bg-rose-500/80 px-4 py-2 text-sm font-semibold text-white"
+                  className="rounded-full bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition-transform active:scale-95"
                   onClick={() => void onImport('replace')}
                 >
                   전체 교체
                 </button>
                 <button
                   type="button"
-                  className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium"
+                  className="rounded-full bg-ink/[0.07] px-4 py-2 text-sm font-semibold text-ink/60"
                   onClick={() => setPendingBackup(null)}
                 >
                   취소
@@ -190,7 +190,7 @@ export default function Settings() {
           )}
 
           {summary && (
-            <p className="fade-in mt-3 text-xs text-white/50">
+            <p className="fade-in mt-3 text-xs text-ink/50">
               {summary.mode === 'merge' ? '병합' : '전체 교체'} 완료 — 아티스트{' '}
               {summary.artists}, 앨범 {summary.albums}, 트랙 {summary.tracks}, 청취
               기록 {summary.listenEvents}
@@ -199,13 +199,13 @@ export default function Settings() {
         </GlassCard>
 
         <GlassCard className="p-4">
-          <h2 className="mb-1 text-sm font-semibold">데이터</h2>
-          <p className="mb-3 text-xs text-white/45">
+          <h2 className="mb-1 text-sm font-bold">데이터</h2>
+          <p className="mb-3 text-xs text-ink/45">
             모든 아티스트·앨범·트랙·청취 기록을 삭제해요.
           </p>
           <button
             type="button"
-            className="rounded-full bg-rose-500/20 px-4 py-2 text-sm font-semibold text-rose-300 hover:bg-rose-500/30"
+            className="rounded-full bg-rose-500/12 px-4 py-2 text-sm font-semibold text-rose-600 ring-1 ring-inset ring-rose-500/20 hover:bg-rose-500/20"
             onClick={() => void onWipe()}
           >
             전체 데이터 삭제

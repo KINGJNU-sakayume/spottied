@@ -57,40 +57,46 @@ export function TrackRow({ track, accent }: { track: Track; accent?: string }) {
   const skipped = track.status === 'skipped';
 
   return (
-    <div className="border-b border-white/5 py-2 last:border-b-0">
+    <div className="border-b border-ink/[0.07] py-2 last:border-b-0">
       <div className="flex items-center gap-2.5">
-        <span className="w-6 shrink-0 text-right text-sm tabular-nums text-white/40">
+        <span className="w-6 shrink-0 text-right text-sm tabular-nums text-ink/35">
           {track.trackNumber}
         </span>
         <div className="min-w-0 flex-1">
           <p
             className={cn(
               'truncate text-sm',
-              listened && 'text-white',
-              skipped && 'text-white/35 line-through',
-              !listened && !skipped && 'text-white/80',
+              listened && 'font-medium text-ink',
+              skipped && 'text-ink/30 line-through',
+              !listened && !skipped && 'text-ink/75',
             )}
           >
             {track.name}
           </p>
-          <div className="mt-0.5 flex items-center gap-2 text-xs text-white/40">
-            <span className="tabular-nums">{formatDurationMs(track.durationMs)}</span>
-            {track.note && <span className="truncate italic">“{track.note}”</span>}
+          {/* Rating lives on the meta line so long titles keep their room. */}
+          <div className="mt-1 flex items-center gap-2.5">
+            <span className="text-xs tabular-nums text-ink/40">
+              {formatDurationMs(track.durationMs)}
+            </span>
+            <StarRating
+              size={12}
+              value={track.rating}
+              onChange={(v) => void updateTrack(track.id, { rating: v })}
+            />
           </div>
+          {track.note && (
+            <p className="mt-0.5 truncate text-xs italic text-ink/40">
+              “{track.note}”
+            </p>
+          )}
         </div>
-
-        <StarRating
-          size={13}
-          value={track.rating}
-          onChange={(v) => void updateTrack(track.id, { rating: v })}
-        />
 
         <button
           type="button"
           aria-label={track.likedAt ? '좋아요 해제' : '좋아요'}
           className={cn(
             'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-colors',
-            track.likedAt ? 'text-rose-400' : 'text-white/30 hover:text-white/60',
+            track.likedAt ? 'text-rose-500' : 'text-ink/25 hover:text-ink/50',
           )}
           onClick={() =>
             void updateTrack(track.id, {
@@ -105,14 +111,14 @@ export function TrackRow({ track, accent }: { track: Track; accent?: string }) {
           type="button"
           aria-label={listened ? '재청취 기록' : '청취 처리'}
           className={cn(
-            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-200',
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-full shadow-sm ring-1 ring-inset transition-all duration-200 active:scale-95',
             listened
-              ? 'text-base'
+              ? 'text-white ring-white/25'
               : skipped
-                ? 'bg-white/10 text-white/40'
-                : 'bg-white/10 text-white/60 hover:bg-white/20',
+                ? 'bg-ink/[0.06] text-ink/30 ring-ink/[0.06]'
+                : 'bg-white/80 text-ink/55 ring-ink/[0.08] hover:bg-white',
           )}
-          style={listened ? { background: accent ?? 'rgba(255,255,255,0.9)', color: '#0b0b0f' } : undefined}
+          style={listened ? { background: accent ?? 'rgba(29,29,31,0.85)' } : undefined}
           onClick={onStatusTap}
           onPointerDown={startLongPress}
           onPointerUp={cancelLongPress}
@@ -136,7 +142,7 @@ export function TrackRow({ track, accent }: { track: Track; accent?: string }) {
           <button
             type="button"
             aria-label="트랙 메뉴"
-            className="flex h-8 w-6 items-center justify-center text-white/35 hover:text-white/70"
+            className="flex h-8 w-6 items-center justify-center text-ink/30 hover:text-ink/60"
             onClick={() => setMenuOpen((v) => !v)}
           >
             <DotsIcon size={16} />
@@ -148,11 +154,11 @@ export function TrackRow({ track, accent }: { track: Track; accent?: string }) {
                 onClick={() => setMenuOpen(false)}
                 aria-hidden
               />
-              <div className="glass fade-in absolute right-0 top-8 z-30 w-44 overflow-hidden rounded-xl py-1 text-sm">
+              <div className="glass-bar fade-in absolute right-0 top-8 z-30 w-44 overflow-hidden rounded-2xl py-1 text-sm">
                 {!skipped && (
                   <button
                     type="button"
-                    className="block w-full px-4 py-2.5 text-left hover:bg-white/10"
+                    className="block w-full px-4 py-2.5 text-left hover:bg-ink/[0.05]"
                     onClick={() => {
                       setMenuOpen(false);
                       void setTrackStatus(track.id, 'skipped');
@@ -164,7 +170,7 @@ export function TrackRow({ track, accent }: { track: Track; accent?: string }) {
                 {track.status !== 'none' && (
                   <button
                     type="button"
-                    className="block w-full px-4 py-2.5 text-left hover:bg-white/10"
+                    className="block w-full px-4 py-2.5 text-left hover:bg-ink/[0.05]"
                     onClick={() => {
                       setMenuOpen(false);
                       void setTrackStatus(track.id, 'none');
@@ -175,7 +181,7 @@ export function TrackRow({ track, accent }: { track: Track; accent?: string }) {
                 )}
                 <button
                   type="button"
-                  className="block w-full px-4 py-2.5 text-left hover:bg-white/10"
+                  className="block w-full px-4 py-2.5 text-left hover:bg-ink/[0.05]"
                   onClick={() => {
                     setMenuOpen(false);
                     setNoteDraft(track.note ?? '');
@@ -197,11 +203,11 @@ export function TrackRow({ track, accent }: { track: Track; accent?: string }) {
             onChange={(e) => setNoteDraft(e.target.value)}
             rows={2}
             placeholder="메모"
-            className="min-w-0 flex-1 resize-none rounded-lg bg-white/10 px-3 py-2 text-sm text-white placeholder-white/30 outline-none ring-1 ring-inset ring-white/10 focus:ring-white/30"
+            className="glass-inset min-w-0 flex-1 resize-none rounded-xl px-3 py-2 text-sm text-ink placeholder-ink/30 outline-none focus:ring-2 focus:ring-ink/15"
           />
           <button
             type="button"
-            className="rounded-lg bg-white/15 px-3 py-2 text-sm font-medium hover:bg-white/25"
+            className="rounded-xl bg-ink px-3.5 py-2 text-sm font-semibold text-white transition-transform active:scale-95"
             onClick={saveNote}
           >
             저장

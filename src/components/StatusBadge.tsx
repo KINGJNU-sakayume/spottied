@@ -3,9 +3,9 @@ import { cn } from '../utils/cn';
 import { ARTIST_STATUS_LABEL } from '../utils/derive';
 
 const STYLES: Record<ArtistDigStatus, string> = {
-  'not-started': 'bg-white/10 text-white/60',
-  'in-progress': 'bg-sky-400/20 text-sky-200',
-  completed: 'bg-amber-400/20 text-amber-200',
+  'not-started': 'bg-ink/[0.07] text-ink/55 ring-ink/[0.06]',
+  'in-progress': 'bg-sky-500/15 text-sky-700 ring-sky-500/20',
+  completed: 'bg-amber-500/20 text-amber-700 ring-amber-500/25',
 };
 
 export function StatusBadge({
@@ -18,7 +18,7 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
+        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset',
         STYLES[status],
         className,
       )}

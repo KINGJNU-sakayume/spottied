@@ -38,9 +38,9 @@ export function AlbumRow({
   const progress = getAlbumProgress(album, tracks);
 
   return (
-    <div className="glass overflow-hidden rounded-2xl">
+    <div className="glass overflow-hidden rounded-[22px]">
       <div
-        className="flex cursor-pointer items-center gap-3 p-3"
+        className="flex cursor-pointer items-center gap-3 p-3 transition-colors hover:bg-white/25"
         onClick={onToggle}
         role="button"
         aria-expanded={expanded}
@@ -58,14 +58,14 @@ export function AlbumRow({
             images={album.images}
             alt={album.name}
             sizePx={56}
-            className="w-14"
+            className="w-14 shadow-md"
           />
-          <span className="absolute inset-0 rounded-lg bg-white/0 transition-colors duration-150 group-hover:bg-white/10 group-active:bg-white/20" />
+          <span className="absolute inset-0 rounded-xl bg-ink/0 transition-colors duration-150 group-hover:bg-ink/10 group-active:bg-ink/20" />
         </button>
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold">{album.name}</p>
-          <p className="mt-0.5 truncate text-xs text-white/50">
+          <p className="mt-0.5 truncate text-xs text-ink/50">
             {releaseYear(album.releaseDate)} · {getAlbumTypeLabel(album)} ·{' '}
             {progress.processed}/{progress.total}곡
           </p>
@@ -84,7 +84,7 @@ export function AlbumRow({
         <ChevronDownIcon
           size={16}
           className={cn(
-            'shrink-0 text-white/40 transition-transform duration-200',
+            'shrink-0 text-ink/35 transition-transform duration-200',
             expanded && 'rotate-180',
           )}
         />
@@ -93,7 +93,7 @@ export function AlbumRow({
           <button
             type="button"
             aria-label="앨범 메뉴"
-            className="flex h-8 w-6 items-center justify-center text-white/35 hover:text-white/70"
+            className="flex h-8 w-6 items-center justify-center text-ink/30 hover:text-ink/60"
             onClick={() => setMenuOpen((v) => !v)}
           >
             <DotsIcon size={16} />
@@ -105,10 +105,10 @@ export function AlbumRow({
                 onClick={() => setMenuOpen(false)}
                 aria-hidden
               />
-              <div className="glass fade-in absolute right-0 top-8 z-30 w-48 overflow-hidden rounded-xl py-1 text-sm">
+              <div className="glass-bar fade-in absolute right-0 top-8 z-30 w-48 overflow-hidden rounded-2xl py-1 text-sm">
                 <button
                   type="button"
-                  className="block w-full px-4 py-2.5 text-left hover:bg-white/10"
+                  className="block w-full px-4 py-2.5 text-left hover:bg-ink/[0.05]"
                   onClick={() => {
                     setMenuOpen(false);
                     void markAlbumListened(album.id);
@@ -118,7 +118,7 @@ export function AlbumRow({
                 </button>
                 <button
                   type="button"
-                  className="block w-full px-4 py-2.5 text-left hover:bg-white/10"
+                  className="block w-full px-4 py-2.5 text-left hover:bg-ink/[0.05]"
                   onClick={() => {
                     setMenuOpen(false);
                     void setAlbumExcluded(album.id, true);
@@ -130,7 +130,7 @@ export function AlbumRow({
                   href={spotifyAlbumUrl(album.id)}
                   target="_blank"
                   rel="noreferrer"
-                  className="block w-full px-4 py-2.5 text-left hover:bg-white/10"
+                  className="block w-full px-4 py-2.5 text-left hover:bg-ink/[0.05]"
                   onClick={() => setMenuOpen(false)}
                 >
                   Spotify에서 열기
@@ -142,13 +142,13 @@ export function AlbumRow({
       </div>
 
       {expanded && (
-        <div className="border-t border-white/5 px-3 pb-3">
+        <div className="border-t border-ink/[0.07] px-3 pb-3">
           {loading && tracks.length === 0 ? (
-            <p className="py-4 text-center text-sm text-white/40">
+            <p className="py-4 text-center text-sm text-ink/40">
               트랙 불러오는 중…
             </p>
           ) : tracks.length === 0 ? (
-            <p className="py-4 text-center text-sm text-white/40">
+            <p className="py-4 text-center text-sm text-ink/40">
               트랙 정보가 없어요. Spotify 연결 후 다시 열어주세요.
             </p>
           ) : (
@@ -159,7 +159,7 @@ export function AlbumRow({
               {!progress.complete && (
                 <button
                   type="button"
-                  className="mt-2 w-full rounded-xl bg-white/10 py-2.5 text-sm font-medium text-white/80 transition-colors hover:bg-white/20"
+                  className="glass-inset mt-2 w-full rounded-xl py-2.5 text-sm font-semibold text-ink/70 transition-colors hover:text-ink"
                   onClick={() => void markAlbumListened(album.id)}
                 >
                   전부 청취 처리

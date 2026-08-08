@@ -23,13 +23,13 @@ export function RouteSheet({
   return (
     <div className="fixed inset-0 z-40">
       <div
-        className="fade-in absolute inset-0 bg-black/60"
+        className="glass-scrim fade-in absolute inset-0"
         onClick={onClose}
         aria-hidden
       />
-      <div className="sheet-in glass-deep absolute inset-x-0 bottom-0 top-10 overflow-y-auto rounded-t-3xl">
-        <div className="sticky top-0 z-10 flex justify-center pb-1 pt-2">
-          <div className="h-1 w-10 rounded-full bg-white/25" />
+      <div className="sheet-in glass-bar absolute inset-x-0 bottom-0 top-10 overflow-y-auto rounded-t-[28px]">
+        <div className="sticky top-0 z-10 flex justify-center pb-1 pt-2.5">
+          <div className="h-1.5 w-10 rounded-full bg-ink/20" />
         </div>
         {children}
       </div>

@@ -4,8 +4,8 @@ export default {
   theme: {
     extend: {
       colors: {
-        base: '#0b0b0f',
-        elev: '#141419',
+        base: '#f5f5f7',
+        ink: '#1d1d1f',
       },
       fontFamily: {
         sans: [

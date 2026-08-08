@@ -66,18 +66,18 @@ export default function Search() {
 
   return (
     <div>
-      <h1 className="mb-4 text-2xl font-bold">검색</h1>
+      <h1 className="mb-4 text-[28px] font-bold tracking-tight">검색</h1>
 
       {!connected ? (
         <div className="mt-24 text-center">
-          <p className="text-sm text-white/50">
+          <p className="text-sm text-ink/50">
             아티스트 검색에는 Spotify 연결이 필요해요.
           </p>
           <button
             type="button"
             disabled={!online}
             title={online ? undefined : '오프라인'}
-            className="mt-5 rounded-full bg-white px-6 py-3 text-sm font-semibold text-black disabled:opacity-40"
+            className="mt-5 rounded-full bg-ink px-6 py-3 text-sm font-semibold text-white transition-transform active:scale-95 disabled:opacity-40"
             onClick={() => void beginLogin()}
           >
             Spotify 연결
@@ -85,8 +85,8 @@ export default function Search() {
         </div>
       ) : (
         <>
-          <div className="glass flex items-center gap-2.5 rounded-2xl px-4 py-3">
-            <SearchIcon size={17} className="shrink-0 text-white/40" />
+          <div className="glass-inset flex items-center gap-2.5 rounded-[20px] px-4 py-3">
+            <SearchIcon size={17} className="shrink-0 text-ink/35" />
             <input
               type="search"
               value={query}
@@ -94,13 +94,13 @@ export default function Search() {
               placeholder="아티스트 검색"
               disabled={!online}
               title={online ? undefined : '오프라인'}
-              className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-white/30 disabled:opacity-40"
+              className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-ink/30 disabled:opacity-40"
             />
           </div>
 
           <div className="mt-4 space-y-2">
             {searching && (
-              <p className="py-8 text-center text-sm text-white/40">검색 중…</p>
+              <p className="py-8 text-center text-sm text-ink/40">검색 중…</p>
             )}
             {!searching &&
               results.map((result) => {
@@ -109,7 +109,7 @@ export default function Search() {
                 return (
                   <div
                     key={result.id}
-                    className="glass flex cursor-pointer items-center gap-3 rounded-2xl p-3"
+                    className="glass flex cursor-pointer items-center gap-3 rounded-[20px] p-3 transition-colors hover:bg-white/30"
                     onClick={() => {
                       if (tracked) navigate(`/artist/${result.id}`);
                     }}
@@ -118,16 +118,16 @@ export default function Search() {
                       <img
                         src={img}
                         alt={result.name}
-                        className="h-12 w-12 shrink-0 rounded-full object-cover ring-1 ring-inset ring-white/10"
+                        className="h-12 w-12 shrink-0 rounded-full object-cover shadow-sm ring-1 ring-inset ring-ink/10"
                         loading="lazy"
                       />
                     ) : (
-                      <div className="h-12 w-12 shrink-0 rounded-full bg-white/10" />
+                      <div className="h-12 w-12 shrink-0 rounded-full bg-ink/[0.06]" />
                     )}
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-semibold">{result.name}</p>
                       {result.genres.length > 0 && (
-                        <p className="truncate text-xs text-white/45">
+                        <p className="truncate text-xs text-ink/45">
                           {result.genres.slice(0, 3).join(' · ')}
                         </p>
                       )}
@@ -141,7 +141,7 @@ export default function Search() {
                         type="button"
                         disabled={Boolean(importing[result.id]) || !online}
                         title={online ? undefined : '오프라인'}
-                        className="shrink-0 rounded-full bg-white px-4 py-2 text-xs font-semibold text-black transition-opacity disabled:opacity-40"
+                        className="shrink-0 rounded-full bg-ink px-4 py-2 text-xs font-semibold text-white transition-all active:scale-95 disabled:opacity-40"
                         onClick={(e) => {
                           e.stopPropagation();
                           void startDigging(result);
@@ -154,7 +154,7 @@ export default function Search() {
                 );
               })}
             {!searching && query.trim() !== '' && results.length === 0 && (
-              <p className="py-8 text-center text-sm text-white/40">
+              <p className="py-8 text-center text-sm text-ink/40">
                 검색 결과가 없어요
               </p>
             )}

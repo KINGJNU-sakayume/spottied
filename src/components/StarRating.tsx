@@ -79,13 +79,13 @@ export function StarRating({
       aria-valuemin={0}
       aria-valuemax={5}
     >
-      <div className="flex gap-[2px] text-white/20">
+      <div className="flex gap-[2px] text-ink/15">
         {[0, 1, 2, 3, 4].map((i) => (
           <Star key={i} size={size} />
         ))}
       </div>
       <div
-        className="absolute inset-y-0 left-0 overflow-hidden text-amber-300 transition-[width] duration-150"
+        className="absolute inset-y-0 left-0 overflow-hidden text-amber-500 transition-[width] duration-150"
         style={{ width: `${(shown / 5) * 100}%` }}
       >
         <div className="flex gap-[2px]" style={{ width }}>

@@ -52,7 +52,7 @@ function AlbumContent({ albumId }: { albumId: string }) {
 
   if (!album) {
     return (
-      <div className="py-24 text-center text-sm text-white/50">
+      <div className="py-24 text-center text-sm text-ink/50">
         앨범을 찾을 수 없어요
       </div>
     );
@@ -77,7 +77,7 @@ function AlbumContent({ albumId }: { albumId: string }) {
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-[26rem]"
         style={{
-          background: `radial-gradient(120% 90% at 50% 0%, ${rgba(accent, 0.35)} 0%, rgba(11,11,15,0) 70%)`,
+          background: `radial-gradient(120% 90% at 50% 0%, ${rgba(accent, 0.28)} 0%, rgba(245,245,247,0) 72%)`,
         }}
       />
 
@@ -86,7 +86,7 @@ function AlbumContent({ albumId }: { albumId: string }) {
           <button
             type="button"
             aria-label="뒤로"
-            className="flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white/80"
+            className="glass flex h-9 w-9 items-center justify-center rounded-full text-ink/70"
             onClick={() => navigate(-1)}
           >
             <ChevronLeftIcon size={18} />
@@ -97,7 +97,7 @@ function AlbumContent({ albumId }: { albumId: string }) {
               disabled={!prev}
               aria-label="이전 앨범"
               title={prev?.name}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white/80 disabled:opacity-30"
+              className="glass flex h-9 w-9 items-center justify-center rounded-full text-ink/70 disabled:opacity-30"
               onClick={() => prev && goSibling(prev.id)}
             >
               <ChevronLeftIcon size={16} />
@@ -107,7 +107,7 @@ function AlbumContent({ albumId }: { albumId: string }) {
               disabled={!next}
               aria-label="다음 앨범"
               title={next?.name}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-black/30 text-white/80 disabled:opacity-30"
+              className="glass flex h-9 w-9 items-center justify-center rounded-full text-ink/70 disabled:opacity-30"
               onClick={() => next && goSibling(next.id)}
             >
               <ChevronRightIcon size={16} />
@@ -120,24 +120,24 @@ function AlbumContent({ albumId }: { albumId: string }) {
             images={album.images}
             alt={album.name}
             sizePx={280}
-            rounded="rounded-xl"
+            rounded="rounded-[22px]"
             className="w-56 shadow-2xl md:w-64"
           />
-          <h1 className="mt-5 text-2xl font-bold">{album.name}</h1>
+          <h1 className="mt-5 text-2xl font-bold tracking-tight">{album.name}</h1>
           {artist && (
             <Link
               to={`/artist/${artist.id}`}
-              className="mt-1 text-sm font-medium text-white/70 hover:text-white"
+              className="mt-1 text-sm font-semibold text-ink/65 hover:text-ink"
             >
               {artist.name}
             </Link>
           )}
-          <p className="mt-1 text-xs text-white/45">
+          <p className="mt-1 text-xs text-ink/45">
             {releaseYear(album.releaseDate)} · {getAlbumTypeLabel(album)} ·{' '}
             {progress.total}곡{totalMs > 0 && ` · ${formatTotalDuration(totalMs)}`}
           </p>
 
-          <div className="mt-4 flex items-center gap-4">
+          <div className="glass mt-4 flex items-center gap-4 rounded-full px-4 py-2.5">
             <StarRating
               size={22}
               value={album.rating}
@@ -147,8 +147,10 @@ function AlbumContent({ albumId }: { albumId: string }) {
               type="button"
               aria-label={album.likedAt ? '좋아요 해제' : '좋아요'}
               className={cn(
-                'flex h-10 w-10 items-center justify-center rounded-full bg-white/10 transition-colors',
-                album.likedAt ? 'text-rose-400' : 'text-white/40 hover:text-white/70',
+                'flex h-10 w-10 items-center justify-center rounded-full transition-colors',
+                album.likedAt
+                  ? 'bg-rose-500/15 text-rose-500'
+                  : 'bg-ink/[0.06] text-ink/35 hover:text-ink/60',
               )}
               onClick={() =>
                 void updateAlbum(album.id, {
@@ -165,7 +167,7 @@ function AlbumContent({ albumId }: { albumId: string }) {
                 size={40}
                 accent={rgba(accent, 0.95)}
               />
-              <span className="text-xs tabular-nums text-white/50">
+              <span className="text-xs font-medium tabular-nums text-ink/50">
                 {progress.processed}/{progress.total}
               </span>
             </div>
@@ -175,7 +177,7 @@ function AlbumContent({ albumId }: { albumId: string }) {
             href={spotifyAlbumUrl(album.id)}
             target="_blank"
             rel="noreferrer"
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-semibold text-black"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-semibold text-white shadow-md ring-1 ring-inset ring-white/25 transition-transform active:scale-95"
             style={{ background: rgba(accent, 1) }}
           >
             <ExternalIcon size={14} />
@@ -192,12 +194,12 @@ function AlbumContent({ albumId }: { albumId: string }) {
           }}
           rows={2}
           placeholder="이 앨범에 대한 메모"
-          className="mt-6 w-full resize-none rounded-xl bg-white/5 px-4 py-3 text-sm text-white placeholder-white/25 outline-none ring-1 ring-inset ring-white/10 focus:ring-white/25"
+          className="glass-inset mt-6 w-full resize-none rounded-[18px] px-4 py-3 text-sm text-ink placeholder-ink/25 outline-none focus:ring-2 focus:ring-ink/15"
         />
 
-        <div className="mt-4">
+        <div className="glass mt-4 rounded-[22px] px-4 py-2">
           {tracks.length === 0 ? (
-            <p className="py-8 text-center text-sm text-white/40">
+            <p className="py-8 text-center text-sm text-ink/40">
               트랙 불러오는 중… (오프라인이라면 Spotify 연결 후 다시 열어주세요)
             </p>
           ) : (

@@ -6,7 +6,8 @@ export interface RGB {
   b: number;
 }
 
-export const DEFAULT_ACCENT: RGB = { r: 148, g: 148, b: 170 };
+/** Apple Music-ish red, used until a cover's own color is available. */
+export const DEFAULT_ACCENT: RGB = { r: 250, g: 45, b: 72 };
 
 const cache = new Map<string, RGB>();
 
@@ -60,7 +61,7 @@ export async function extractDominantColor(url: string): Promise<RGB> {
       g: Math.round(best.g / best.n),
       b: Math.round(best.b / best.n),
     };
-    color = brighten(color);
+    color = deepen(color);
     cache.set(url, color);
     return color;
   } catch {
@@ -68,16 +69,26 @@ export async function extractDominantColor(url: string): Promise<RGB> {
   }
 }
 
-/** Lifts too-dark colors so accents stay visible on the near-black base. */
-function brighten(c: RGB): RGB {
+const ACCENT_TARGET_LUMINANCE = 118;
+
+/**
+ * Accents sit on the white base and carry white text (buttons, fills), so a
+ * pale cover color has to be pushed down into a readable range. Saturation is
+ * nudged up at the same time to keep washed-out artwork from going grey.
+ */
+function deepen(c: RGB): RGB {
   const lum = 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b;
-  if (lum >= 90) return c;
-  const factor = lum > 0 ? 90 / lum : 1;
-  return {
-    r: Math.min(255, Math.round(c.r * factor + 30)),
-    g: Math.min(255, Math.round(c.g * factor + 30)),
-    b: Math.min(255, Math.round(c.b * factor + 30)),
+  if (lum <= ACCENT_TARGET_LUMINANCE) return c;
+  const factor = ACCENT_TARGET_LUMINANCE / lum;
+  const scaled = {
+    r: c.r * factor,
+    g: c.g * factor,
+    b: c.b * factor,
   };
+  const mean = (scaled.r + scaled.g + scaled.b) / 3;
+  const saturate = (v: number) =>
+    Math.min(255, Math.max(0, Math.round(mean + (v - mean) * 1.25)));
+  return { r: saturate(scaled.r), g: saturate(scaled.g), b: saturate(scaled.b) };
 }
 
 export function rgba(c: RGB, alpha: number): string {

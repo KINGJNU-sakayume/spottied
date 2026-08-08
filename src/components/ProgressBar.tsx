@@ -13,11 +13,14 @@ export function ProgressBar({
   const pct = Math.min(100, Math.max(0, value * 100));
   return (
     <div
-      className={cn('h-1 w-full overflow-hidden rounded-full bg-white/15', className)}
+      className={cn(
+        'h-1.5 w-full overflow-hidden rounded-full bg-ink/10 shadow-[inset_0_1px_2px_rgba(16,18,27,0.08)]',
+        className,
+      )}
     >
       <div
         className="h-full rounded-full transition-[width] duration-300 ease-out"
-        style={{ width: `${pct}%`, background: accent ?? 'rgba(255,255,255,0.9)' }}
+        style={{ width: `${pct}%`, background: accent ?? 'rgba(29,29,31,0.75)' }}
       />
     </div>
   );

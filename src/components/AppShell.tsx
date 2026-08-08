@@ -18,13 +18,13 @@ function ReconnectBanner() {
   const setNeedsReconnect = useUiStore((s) => s.setNeedsReconnect);
   if (!needsReconnect) return null;
   return (
-    <div className="glass fade-in fixed inset-x-3 top-3 z-50 flex items-center gap-3 rounded-2xl p-3 lg:left-[15rem] lg:right-4">
-      <p className="min-w-0 flex-1 text-sm text-white/80">
+    <div className="glass-bar fade-in fixed inset-x-3 top-3 z-50 flex items-center gap-3 rounded-[20px] p-3 lg:left-[15rem] lg:right-4">
+      <p className="min-w-0 flex-1 text-sm font-medium text-ink/75">
         Spotify 연결이 만료되었어요
       </p>
       <button
         type="button"
-        className="shrink-0 rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-black"
+        className="shrink-0 rounded-full bg-ink px-4 py-1.5 text-sm font-semibold text-white transition-transform active:scale-95"
         onClick={() => void beginLogin()}
       >
         Spotify 재연결
@@ -32,7 +32,7 @@ function ReconnectBanner() {
       <button
         type="button"
         aria-label="닫기"
-        className="shrink-0 text-white/40 hover:text-white/80"
+        className="shrink-0 text-ink/35 hover:text-ink/70"
         onClick={() => setNeedsReconnect(false)}
       >
         <XIcon size={16} />
@@ -43,10 +43,10 @@ function ReconnectBanner() {
 
 function Sidebar() {
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-white/5 bg-elev/50 p-4 lg:flex">
+    <aside className="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col border-r border-ink/[0.07] bg-white/50 p-4 backdrop-blur-xl lg:flex">
       <div className="mb-8 px-2 pt-2">
         <p className="text-xl font-bold">Spottied</p>
-        <p className="text-xs text-white/40">디스코그래피 디깅 트래커</p>
+        <p className="text-xs text-ink/40">디스코그래피 디깅 트래커</p>
       </div>
       <nav className="space-y-1">
         {TABS.map(({ to, label, icon: Icon }) => (
@@ -56,10 +56,10 @@ function Sidebar() {
             end={to === '/'}
             className={({ isActive }) =>
               cn(
-                'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                'flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-semibold transition-colors',
                 isActive
-                  ? 'bg-white/10 text-white'
-                  : 'text-white/50 hover:bg-white/5 hover:text-white/80',
+                  ? 'glass text-ink'
+                  : 'text-ink/45 hover:bg-white/50 hover:text-ink/80',
               )
             }
           >
@@ -74,8 +74,8 @@ function Sidebar() {
 
 function TabBar() {
   return (
-    <nav className="glass-deep safe-bottom fixed inset-x-0 bottom-0 z-30 lg:hidden">
-      <div className="flex h-[3.75rem]">
+    <nav className="glass-bar fixed inset-x-3 bottom-[calc(0.5rem+env(safe-area-inset-bottom))] z-30 rounded-[26px] lg:hidden">
+      <div className="flex h-16">
         {TABS.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
@@ -83,13 +83,24 @@ function TabBar() {
             end={to === '/'}
             className={({ isActive }) =>
               cn(
-                'flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-medium transition-colors',
-                isActive ? 'text-white' : 'text-white/40',
+                'flex flex-1 flex-col items-center justify-center gap-0.5 text-[10px] font-semibold transition-colors',
+                isActive ? 'text-ink' : 'text-ink/35',
               )
             }
           >
-            <Icon size={21} />
-            {label}
+            {({ isActive }) => (
+              <>
+                <span
+                  className={cn(
+                    'flex h-8 w-12 items-center justify-center rounded-full transition-all duration-200',
+                    isActive && 'bg-ink/[0.07] shadow-[inset_0_1px_2px_rgba(16,18,27,0.06)]',
+                  )}
+                >
+                  <Icon size={20} />
+                </span>
+                {label}
+              </>
+            )}
           </NavLink>
         ))}
       </div>
@@ -101,7 +112,7 @@ export function AppShell() {
   return (
     <div className="min-h-screen lg:pl-56">
       <Sidebar />
-      <main className="mx-auto max-w-3xl px-4 pb-44 pt-4 lg:pb-32">
+      <main className="mx-auto max-w-3xl px-4 pb-48 pt-4 lg:pb-32">
         <Outlet />
       </main>
       <NowDiggingBar />

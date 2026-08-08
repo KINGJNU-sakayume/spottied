@@ -120,23 +120,23 @@ export function SyncReviewSheet({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-50">
-      <div className="fade-in absolute inset-0 bg-black/60" onClick={onClose} aria-hidden />
-      <div className="sheet-in glass-deep absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-3xl p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:inset-x-auto md:left-1/2 md:w-[28rem] md:-translate-x-1/2 md:rounded-b-3xl md:bottom-auto md:top-20">
+      <div className="glass-scrim fade-in absolute inset-0" onClick={onClose} aria-hidden />
+      <div className="sheet-in glass-bar absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[28px] p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] md:inset-x-auto md:bottom-auto md:left-1/2 md:top-20 md:w-[28rem] md:-translate-x-1/2 md:rounded-[28px]">
         <h2 className="mb-1 text-lg font-bold">Spotify에서 가져오기</h2>
-        <p className="mb-4 text-sm text-white/50">
+        <p className="mb-4 text-sm text-ink/50">
           최근 재생 기록 중 디깅 중인 트랙만 보여드려요. 확인 후 기록됩니다.
         </p>
 
         {state.kind === 'loading' && (
-          <p className="py-10 text-center text-sm text-white/40">불러오는 중…</p>
+          <p className="py-10 text-center text-sm text-ink/40">불러오는 중…</p>
         )}
 
         {state.kind === 'auth-error' && (
           <div className="py-8 text-center">
-            <p className="mb-4 text-sm text-white/60">Spotify 연결이 필요해요.</p>
+            <p className="mb-4 text-sm text-ink/60">Spotify 연결이 필요해요.</p>
             <button
               type="button"
-              className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-black"
+              className="rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-white transition-transform active:scale-95"
               onClick={() => void beginLogin()}
             >
               Spotify 연결
@@ -145,11 +145,11 @@ export function SyncReviewSheet({ onClose }: { onClose: () => void }) {
         )}
 
         {state.kind === 'error' && (
-          <p className="py-10 text-center text-sm text-white/50">{state.message}</p>
+          <p className="py-10 text-center text-sm text-ink/50">{state.message}</p>
         )}
 
         {state.kind === 'ready' && state.candidates.length === 0 && (
-          <p className="py-10 text-center text-sm text-white/50">
+          <p className="py-10 text-center text-sm text-ink/50">
             새로 확인된 청취 없음
           </p>
         )}
@@ -164,32 +164,32 @@ export function SyncReviewSheet({ onClose }: { onClose: () => void }) {
                 )[0];
                 return (
                   <li key={key}>
-                    <label className="flex cursor-pointer items-center gap-3 rounded-xl p-2 hover:bg-white/5">
+                    <label className="flex cursor-pointer items-center gap-3 rounded-2xl p-2 hover:bg-white/50">
                       <input
                         type="checkbox"
                         checked={Boolean(checked[key])}
                         onChange={(e) =>
                           setChecked((prev) => ({ ...prev, [key]: e.target.checked }))
                         }
-                        className="h-4 w-4 accent-white"
+                        className="h-4 w-4 accent-rose-500"
                       />
                       {smallest ? (
                         <img
                           src={smallest.url}
                           alt=""
-                          className="h-10 w-10 rounded-md object-cover ring-1 ring-inset ring-white/10"
+                          className="h-10 w-10 rounded-lg object-cover ring-1 ring-inset ring-ink/10"
                           loading="lazy"
                         />
                       ) : (
-                        <div className="h-10 w-10 rounded-md bg-white/10" />
+                        <div className="h-10 w-10 rounded-lg bg-ink/[0.06]" />
                       )}
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm">{c.trackName}</span>
-                        <span className="block truncate text-xs text-white/45">
+                        <span className="block truncate text-xs text-ink/45">
                           {c.artistName}
                         </span>
                       </span>
-                      <span className="shrink-0 text-xs tabular-nums text-white/40">
+                      <span className="shrink-0 text-xs tabular-nums text-ink/40">
                         {formatTime(c.playedAt)}
                       </span>
                     </label>
@@ -200,7 +200,7 @@ export function SyncReviewSheet({ onClose }: { onClose: () => void }) {
             <button
               type="button"
               disabled={selectedCount === 0 || applying}
-              className="mt-4 w-full rounded-full bg-white py-3 text-sm font-semibold text-black transition-opacity disabled:opacity-40"
+              className="mt-4 w-full rounded-full bg-ink py-3 text-sm font-semibold text-white transition-all active:scale-[0.98] disabled:opacity-30"
               onClick={() => void apply()}
             >
               {applying ? '기록 중…' : `${selectedCount}개 기록하기`}

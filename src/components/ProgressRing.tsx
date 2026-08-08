@@ -16,7 +16,7 @@ export function ProgressRing({
   const r = (size - strokeWidth) / 2;
   const c = 2 * Math.PI * r;
   const clamped = Math.min(1, Math.max(0, ratio));
-  const color = accent ?? 'rgba(255,255,255,0.9)';
+  const color = accent ?? 'rgba(29,29,31,0.75)';
   return (
     <div
       className="relative shrink-0"
@@ -30,7 +30,7 @@ export function ProgressRing({
           cy={size / 2}
           r={r}
           fill="none"
-          stroke="rgba(255,255,255,0.15)"
+          stroke="rgba(29,29,31,0.12)"
           strokeWidth={strokeWidth}
         />
         <circle

@@ -28,7 +28,7 @@ export function CoverImage({
   images,
   alt,
   className,
-  rounded = 'rounded-lg',
+  rounded = 'rounded-xl',
   sizePx = 128,
 }: {
   images: SpotifyImage[];
@@ -45,7 +45,7 @@ export function CoverImage({
     return (
       <div
         className={cn(
-          'flex aspect-square items-center justify-center bg-white/5 text-white/25 ring-1 ring-inset ring-white/10',
+          'flex aspect-square items-center justify-center bg-ink/[0.06] text-ink/20 ring-1 ring-inset ring-ink/10',
           rounded,
           className,
         )}
@@ -58,7 +58,7 @@ export function CoverImage({
   return (
     <div
       className={cn(
-        'relative aspect-square overflow-hidden bg-white/5 ring-1 ring-inset ring-white/10',
+        'relative aspect-square overflow-hidden bg-ink/[0.04] ring-1 ring-inset ring-ink/10',
         rounded,
         className,
       )}

@@ -37,15 +37,15 @@ function DiggingCard({
   const progress = getAlbumProgress(rp.album, tracksByAlbum[rp.album.id] ?? []);
 
   return (
-    <div className="glass relative overflow-hidden rounded-3xl">
+    <div className="glass relative overflow-hidden rounded-[26px]">
       <AmbientBackdrop imageUrl={coverUrl} />
       <div className="relative flex gap-4 p-4">
         <CoverImage
           images={rp.album.images}
           alt={rp.album.name}
           sizePx={112}
-          rounded="rounded-xl"
-          className="w-24 shrink-0 shadow-2xl md:w-28"
+          rounded="rounded-2xl"
+          className="w-24 shrink-0 shadow-xl md:w-28"
         />
         <div className="flex min-w-0 flex-1 flex-col justify-between py-0.5">
           <div className="min-w-0">
@@ -55,7 +55,7 @@ function DiggingCard({
             >
               {artist.name}
             </Link>
-            <p className="mt-0.5 truncate text-sm text-white/60">
+            <p className="mt-0.5 truncate text-sm text-ink/55">
               {formatResumeText(rp)}
             </p>
           </div>
@@ -70,7 +70,7 @@ function DiggingCard({
                 href={spotifyAlbumUrl(rp.album.id)}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold text-black transition-transform active:scale-95"
+                className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold text-white shadow-md ring-1 ring-inset ring-white/25 transition-transform active:scale-95"
                 style={{ background: rgba(accent, 1) }}
               >
                 <PlayIcon size={13} />
@@ -78,7 +78,7 @@ function DiggingCard({
               </a>
               <Link
                 to={`/artist/${artist.id}`}
-                className="rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/20"
+                className="glass-inset whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold text-ink/65 transition-colors hover:text-ink"
               >
                 아티스트
               </Link>
@@ -106,21 +106,21 @@ function BackupReminder({ hasData }: { hasData: boolean }) {
   if (!hasNewRecords) return null;
 
   return (
-    <div className="glass mb-4 flex items-center gap-3 rounded-2xl p-3">
-      <p className="min-w-0 flex-1 text-sm text-white/70">
+    <div className="glass mb-4 flex items-center gap-3 rounded-[20px] p-3">
+      <p className="min-w-0 flex-1 text-sm text-ink/65">
         {lastExport
           ? '마지막 백업이 30일이 넘었어요. 데이터를 내보내 주세요.'
           : '기록은 이 브라우저에만 저장돼요. 주기적으로 백업해 주세요.'}
       </p>
       <Link
         to="/settings"
-        className="shrink-0 rounded-full bg-white/15 px-3.5 py-1.5 text-sm font-medium hover:bg-white/25"
+        className="shrink-0 rounded-full bg-ink px-3.5 py-1.5 text-sm font-semibold text-white transition-transform active:scale-95"
       >
         백업하기
       </Link>
       <button
         type="button"
-        className="shrink-0 text-sm text-white/40 hover:text-white/70"
+        className="shrink-0 text-sm text-ink/40 hover:text-ink/70"
         onClick={() => setDismissed(true)}
       >
         나중에
@@ -165,13 +165,13 @@ export default function Home() {
 
   return (
     <div>
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">홈</h1>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h1 className="text-[28px] font-bold tracking-tight">홈</h1>
         <button
           type="button"
           disabled={!online}
           title={online ? undefined : '오프라인'}
-          className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3.5 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/20 disabled:opacity-40"
+          className="glass inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-semibold text-ink/70 transition-colors hover:text-ink disabled:opacity-40"
           onClick={() => setSyncOpen(true)}
         >
           <RefreshIcon size={15} />
@@ -183,15 +183,15 @@ export default function Home() {
 
       {!loaded ? null : !hasAny ? (
         <div className="mt-24 text-center">
-          <p className="text-lg font-semibold text-white/80">
+          <p className="text-lg font-bold text-ink/80">
             아직 디깅 중인 아티스트가 없어요
           </p>
-          <p className="mt-1 text-sm text-white/40">
+          <p className="mt-1 text-sm text-ink/40">
             검색에서 아티스트를 추가하면 여기서 이어 들을 수 있어요.
           </p>
           <Link
             to="/search"
-            className="mt-6 inline-block rounded-full bg-white px-6 py-3 text-sm font-semibold text-black"
+            className="mt-6 inline-block rounded-full bg-ink px-6 py-3 text-sm font-semibold text-white transition-transform active:scale-95"
           >
             아티스트 검색하기
           </Link>
@@ -212,7 +212,7 @@ export default function Home() {
 
           {groups.completed.length > 0 && (
             <section>
-              <h2 className="mb-3 text-sm font-semibold text-white/50">완주</h2>
+              <h2 className="mb-3 text-sm font-bold text-ink/45">완주</h2>
               <div className="no-scrollbar flex gap-3 overflow-x-auto pb-1">
                 {groups.completed.map((artist) => (
                   <Link
@@ -225,9 +225,9 @@ export default function Home() {
                       alt={artist.name}
                       sizePx={80}
                       rounded="rounded-full"
-                      className="w-20"
+                      className="w-20 shadow-md"
                     />
-                    <p className="mt-1.5 truncate text-center text-xs text-white/70">
+                    <p className="mt-1.5 truncate text-center text-xs font-medium text-ink/70">
                       {artist.name}
                     </p>
                   </Link>
@@ -238,7 +238,7 @@ export default function Home() {
 
           {groups.notStarted.length > 0 && (
             <section>
-              <h2 className="mb-3 text-sm font-semibold text-white/50">미시작</h2>
+              <h2 className="mb-3 text-sm font-bold text-ink/45">미시작</h2>
               <div className="flex flex-wrap gap-2">
                 {groups.notStarted.map((artist) => {
                   const img = pickImage(artist.images, 24);
@@ -246,7 +246,7 @@ export default function Home() {
                     <Link
                       key={artist.id}
                       to={`/artist/${artist.id}`}
-                      className="glass flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 text-sm text-white/80 transition-colors hover:text-white"
+                      className="glass flex items-center gap-2 rounded-full py-1.5 pl-1.5 pr-3.5 text-sm font-medium text-ink/75 transition-colors hover:text-ink"
                     >
                       {img ? (
                         <img
@@ -256,7 +256,7 @@ export default function Home() {
                           loading="lazy"
                         />
                       ) : (
-                        <span className="h-6 w-6 rounded-full bg-white/10" />
+                        <span className="h-6 w-6 rounded-full bg-ink/10" />
                       )}
                       {artist.name}
                     </Link>

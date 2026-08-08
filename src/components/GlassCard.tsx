@@ -5,5 +5,5 @@ export function GlassCard({
   className,
   ...rest
 }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('glass rounded-2xl', className)} {...rest} />;
+  return <div className={cn('glass rounded-[22px]', className)} {...rest} />;
 }
