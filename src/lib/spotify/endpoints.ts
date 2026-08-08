@@ -45,7 +45,12 @@ export interface RecentlyPlayedItem {
 }
 
 export async function searchArtists(query: string): Promise<SpotifyArtistObject[]> {
-  const params = new URLSearchParams({ q: query, type: 'artist', limit: '20' });
+  const params = new URLSearchParams({
+    q: query,
+    type: 'artist',
+    market: 'KR',
+    limit: '20',
+  });
   const data = await spotifyFetch<{ artists: Paging<SpotifyArtistObject> }>(
     `/v1/search?${params.toString()}`,
   );

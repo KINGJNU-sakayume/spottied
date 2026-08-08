@@ -57,12 +57,29 @@ HashRouter · Recharts · Spotify Web API (Authorization Code + PKCE, 완전
    VITE_SPOTIFY_CLIENT_ID=여기에_클라이언트_ID
    ```
 
-7. GitHub 저장소에도 같은 값을 시크릿으로 등록합니다:
+7. **User Management에 본인 계정을 추가합니다 (필수).** 앱 설정의
+   **User Management**에서 앱을 사용할 Spotify 계정의 **이름과 이메일**을
+   등록하세요. 개발 모드(Development Mode) 앱은 여기에 등록된 계정만
+   카탈로그(검색·아티스트·앨범)를 조회할 수 있습니다. 이걸 빠뜨리면 검색이
+   `400 Invalid limit`으로 실패하는데, 이 메시지는 Spotify가 주는 잘못된
+   힌트입니다 — limit 값과는 무관하고 권한 문제입니다.
+8. GitHub 저장소에도 같은 값을 시크릿으로 등록합니다:
    **Settings → Secrets and variables → Actions → New repository secret**
    - Name: `VITE_SPOTIFY_CLIENT_ID`
    - Value: 복사한 Client ID
 
 요청 스코프는 `user-read-recently-played` 하나뿐입니다 (최근 재생 동기화 용).
+
+### 문제가 생기면
+
+| 증상 | 원인 |
+| --- | --- |
+| 검색이 `400 Invalid limit`으로 실패 | 위 7번(User Management 등록)을 빠뜨린 경우. limit 값과 무관합니다. |
+| 설정에 `Client ID: (설정되지 않음)` | `VITE_SPOTIFY_CLIENT_ID` 시크릿 없이 빌드된 경우. 등록 후 재배포하세요. |
+| 로그인 후 돌아왔는데 연결이 안 됨 | Redirect URI가 대시보드 등록값과 정확히 일치하지 않는 경우 (슬래시까지). |
+
+설정 화면 하단에 앱이 실제로 사용 중인 **Redirect URI와 Client ID**가 표시되니
+대시보드 값과 대조해 보세요.
 
 ## 2. GitHub Pages 배포
 

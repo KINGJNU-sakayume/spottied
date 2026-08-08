@@ -40,6 +40,17 @@ export function isClientIdConfigured(): boolean {
 export const MISSING_CLIENT_ID_MESSAGE =
   'Spotify Client ID가 빌드에 포함되지 않았어요. GitHub Actions 시크릿 VITE_SPOTIFY_CLIENT_ID를 등록한 뒤 다시 배포해 주세요.';
 
+/**
+ * A development-mode app whose logged-in account is not on the dashboard
+ * allow-list gets refused on catalog endpoints with a misleading "Invalid
+ * limit" / "Invalid offset" 400, which sends you auditing query parameters
+ * that were fine all along. Translate it into the actual cause.
+ */
+const CATALOG_ACCESS_HINT =
+  '요청 자체는 정상이에요. Spotify 개발자 대시보드 → 해당 앱 → User Management에 지금 로그인한 Spotify 계정을 추가해 주세요. 개발 모드 앱은 등록된 계정만 카탈로그를 조회할 수 있습니다.';
+
+const MISLEADING_CATALOG_ERRORS = ['invalid limit', 'invalid offset'];
+
 /** Spotify puts the useful detail in the response body, not the status. */
 async function readSpotifyError(res: Response, fallback: string): Promise<string> {
   try {
@@ -50,7 +61,11 @@ async function readSpotifyError(res: Response, fallback: string): Promise<string
     const detail =
       body.error_description ??
       (typeof body.error === 'string' ? body.error : body.error?.message);
-    return detail ? `${fallback} — ${detail}` : fallback;
+    if (!detail) return fallback;
+    const message = `${fallback} — ${detail}`;
+    return MISLEADING_CATALOG_ERRORS.includes(detail.trim().toLowerCase())
+      ? `${message}. ${CATALOG_ACCESS_HINT}`
+      : message;
   } catch {
     return fallback;
   }
