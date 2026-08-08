@@ -1,9 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import type { Album, Artist, ListenEvent, Track } from '../types';
 import {
+  artistProgressRanking,
+  completedAlbumTypeDistribution,
   countCompletedArtists,
   formatResumeText,
   genreDistribution,
+  groupAlbumsByYear,
+  groupLogEvents,
+  listenEventsByDay,
+  listenedDurationFromEvents,
+  onThisDay,
+  ratingHabits,
+  releaseYearDistribution,
+  suggestedUnheardAlbums,
+  totalListenedDurationMs,
   getAlbumProgress,
   getAlbumTypeLabel,
   getArtistProgress,
@@ -382,5 +393,396 @@ describe('stats', () => {
       { genre: 'pop', count: 2 },
       { genre: 'k-pop', count: 1 },
     ]);
+  });
+});
+
+describe('groupAlbumsByYear', () => {
+  it('groups ascending by year, keeping release order inside a year', () => {
+    const groups = groupAlbumsByYear([
+      mkAlbum({ id: 'b', releaseDate: '2007-05-01', name: 'B' }),
+      mkAlbum({ id: 'a', releaseDate: '1999-06-01', name: 'A' }),
+      mkAlbum({ id: 'c', releaseDate: '1999-02-01', name: 'C' }),
+    ]);
+    expect(groups.map((g) => g.year)).toEqual(['1999', '2007']);
+    expect(groups[0].albums.map((a) => a.id)).toEqual(['c', 'a']);
+  });
+
+  it('buckets year-only release dates with full dates of the same year', () => {
+    const groups = groupAlbumsByYear([
+      mkAlbum({ id: 'a', releaseDate: '1999' }),
+      mkAlbum({ id: 'b', releaseDate: '1999-06-01' }),
+    ]);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].year).toBe('1999');
+    expect(groups[0].albums).toHaveLength(2);
+  });
+
+  it('returns an empty array for no albums', () => {
+    expect(groupAlbumsByYear([])).toEqual([]);
+  });
+
+  it('does not throw on a blank release date', () => {
+    const groups = groupAlbumsByYear([mkAlbum({ releaseDate: '' })]);
+    expect(groups[0].year).toBe('0000');
+  });
+});
+
+describe('groupLogEvents', () => {
+  it('collapses consecutive same-album events, newest day first', () => {
+    const days = groupLogEvents([
+      mkEvent({ id: '1', albumId: 'al1', listenedAt: '2026-03-01T10:00:00' }),
+      mkEvent({ id: '2', albumId: 'al1', listenedAt: '2026-03-01T11:00:00' }),
+      mkEvent({ id: '3', albumId: 'al2', listenedAt: '2026-03-02T09:00:00' }),
+    ]);
+    expect(days.map((d) => d.dayKey)).toEqual(['2026-03-02', '2026-03-01']);
+    expect(days[1].groups).toHaveLength(1);
+    expect(days[1].groups[0].events.map((e) => e.id)).toEqual(['2', '1']);
+  });
+
+  it('does not merge the same album across an intervening album', () => {
+    const days = groupLogEvents([
+      mkEvent({ id: '1', albumId: 'al1', listenedAt: '2026-03-01T10:00:00' }),
+      mkEvent({ id: '2', albumId: 'al2', listenedAt: '2026-03-01T11:00:00' }),
+      mkEvent({ id: '3', albumId: 'al1', listenedAt: '2026-03-01T12:00:00' }),
+    ]);
+    expect(days[0].groups).toHaveLength(3);
+  });
+
+  it('splits the same album across a local midnight', () => {
+    const days = groupLogEvents([
+      mkEvent({ id: '1', albumId: 'al1', listenedAt: '2026-03-01T23:50:00' }),
+      mkEvent({ id: '2', albumId: 'al1', listenedAt: '2026-03-02T00:10:00' }),
+    ]);
+    expect(days).toHaveLength(2);
+    expect(days[0].groups[0].events.map((e) => e.id)).toEqual(['2']);
+  });
+
+  it('orders a bulk mark deterministically despite one shared timestamp', () => {
+    const at = '2026-03-01T12:00:00';
+    const days = groupLogEvents([
+      mkEvent({ id: 'c', albumId: 'al1', listenedAt: at }),
+      mkEvent({ id: 'a', albumId: 'al1', listenedAt: at }),
+      mkEvent({ id: 'b', albumId: 'al1', listenedAt: at }),
+    ]);
+    expect(days[0].groups).toHaveLength(1);
+    expect(days[0].groups[0].events.map((e) => e.id)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('returns an empty array for no events', () => {
+    expect(groupLogEvents([])).toEqual([]);
+  });
+});
+
+describe('listen duration', () => {
+  it('sums only listened tracks', () => {
+    const tracks = [
+      mkTrack({ id: 'a', status: 'listened', durationMs: 1000 }),
+      mkTrack({ id: 'b', status: 'skipped', durationMs: 500 }),
+      mkTrack({ id: 'c', status: 'none', durationMs: 700 }),
+    ];
+    expect(totalListenedDurationMs(tracks)).toBe(1000);
+  });
+
+  it('does not produce NaN when a duration is missing', () => {
+    const broken = mkTrack({ status: 'listened' });
+    delete (broken as { durationMs?: number }).durationMs;
+    expect(totalListenedDurationMs([broken])).toBe(0);
+  });
+
+  it('counts replays separately when summing from events', () => {
+    const t = mkTrack({ id: 't1', durationMs: 1000 });
+    const events = [mkEvent({ trackId: 't1' }), mkEvent({ trackId: 't1' })];
+    expect(listenedDurationFromEvents(events, { t1: t })).toBe(2000);
+  });
+
+  it('skips events whose track is unknown', () => {
+    expect(listenedDurationFromEvents([mkEvent({ trackId: 'gone' })], {})).toBe(0);
+  });
+});
+
+describe('listenEventsByDay', () => {
+  it('emits a dense oldest-first range ending today', () => {
+    const days = listenEventsByDay(
+      [
+        mkEvent({ listenedAt: '2026-03-15T10:00:00' }),
+        mkEvent({ listenedAt: '2026-03-15T20:00:00' }),
+        mkEvent({ listenedAt: '2026-03-13T10:00:00' }),
+      ],
+      3,
+      new Date(2026, 2, 15),
+    );
+    expect(days).toEqual([
+      { day: '2026-03-13', count: 1 },
+      { day: '2026-03-14', count: 0 },
+      { day: '2026-03-15', count: 2 },
+    ]);
+  });
+
+  it('excludes events older than the window', () => {
+    const days = listenEventsByDay(
+      [mkEvent({ listenedAt: '2025-01-01T10:00:00' })],
+      7,
+      new Date(2026, 2, 15),
+    );
+    expect(days.every((d) => d.count === 0)).toBe(true);
+  });
+
+  it('crosses a month boundary correctly', () => {
+    const days = listenEventsByDay([], 4, new Date(2026, 2, 2));
+    expect(days[0].day).toBe('2026-02-27');
+  });
+
+  it('returns an empty array for a zero-day window', () => {
+    expect(listenEventsByDay([], 0, new Date(2026, 2, 15))).toEqual([]);
+  });
+});
+
+describe('releaseYearDistribution', () => {
+  it('buckets listened albums into contiguous 5-year ranges', () => {
+    const albums = [
+      mkAlbum({ id: 'a', releaseDate: '1993-01-01' }),
+      mkAlbum({ id: 'b', releaseDate: '1997-01-01' }),
+      mkAlbum({ id: 'c', releaseDate: '2007-01-01' }),
+    ];
+    const listened = (albumId: string) => [
+      mkTrack({ id: `${albumId}t`, albumId, status: 'listened' }),
+    ];
+    expect(
+      releaseYearDistribution(albums, {
+        a: listened('a'),
+        b: listened('b'),
+        c: listened('c'),
+      }),
+    ).toEqual([
+      { bucket: '1990–1994', count: 1 },
+      { bucket: '1995–1999', count: 1 },
+      { bucket: '2000–2004', count: 0 },
+      { bucket: '2005–2009', count: 1 },
+    ]);
+  });
+
+  it('ignores albums with no listened tracks and uncached albums', () => {
+    const albums = [mkAlbum({ id: 'a' }), mkAlbum({ id: 'b' })];
+    expect(
+      releaseYearDistribution(albums, {
+        a: [mkTrack({ albumId: 'a', status: 'skipped' })],
+      }),
+    ).toEqual([]);
+  });
+
+  it('drops a malformed release date instead of stretching the axis', () => {
+    const albums = [
+      mkAlbum({ id: 'a', releaseDate: '' }),
+      mkAlbum({ id: 'b', releaseDate: '1999' }),
+    ];
+    const listened = (albumId: string) => [
+      mkTrack({ id: `${albumId}t`, albumId, status: 'listened' }),
+    ];
+    expect(
+      releaseYearDistribution(albums, { a: listened('a'), b: listened('b') }),
+    ).toEqual([{ bucket: '1995–1999', count: 1 }]);
+  });
+});
+
+describe('artistProgressRanking', () => {
+  it('ranks by fewest remaining tracks, not by highest ratio', () => {
+    const near = mkArtist({ id: 'near', name: '가' });
+    const ahead = mkArtist({ id: 'ahead', name: '나' });
+    const albums = [
+      mkAlbum({ id: 'n1', artistId: 'near', totalTracks: 10 }),
+      mkAlbum({ id: 'a1', artistId: 'ahead', totalTracks: 4 }),
+    ];
+    const tracksByAlbum = {
+      // 8/10 listened — lower ratio, but only 2 left.
+      n1: Array.from({ length: 10 }, (_, i) =>
+        mkTrack({
+          id: `n${i}`,
+          albumId: 'n1',
+          artistId: 'near',
+          trackNumber: i + 1,
+          status: i < 8 ? 'listened' : 'none',
+        }),
+      ),
+      // 1/4 listened — 3 left.
+      a1: Array.from({ length: 4 }, (_, i) =>
+        mkTrack({
+          id: `a${i}`,
+          albumId: 'a1',
+          artistId: 'ahead',
+          trackNumber: i + 1,
+          status: i < 1 ? 'listened' : 'none',
+        }),
+      ),
+    };
+    const ranked = artistProgressRanking([ahead, near], albums, tracksByAlbum);
+    expect(ranked.map((r) => r.artist.id)).toEqual(['near', 'ahead']);
+    expect(ranked[0].remaining).toBe(2);
+  });
+
+  it('excludes completed and not-started artists', () => {
+    const done = mkArtist({ id: 'done' });
+    const fresh = mkArtist({ id: 'fresh' });
+    const albums = [
+      mkAlbum({ id: 'd1', artistId: 'done', totalTracks: 1 }),
+      mkAlbum({ id: 'f1', artistId: 'fresh', totalTracks: 1 }),
+    ];
+    const tracksByAlbum = {
+      d1: [mkTrack({ id: 'd', albumId: 'd1', artistId: 'done', status: 'listened' })],
+      f1: [mkTrack({ id: 'f', albumId: 'f1', artistId: 'fresh', status: 'none' })],
+    };
+    expect(artistProgressRanking([done, fresh], albums, tracksByAlbum)).toEqual([]);
+  });
+
+  it('excludes an artist whose only album is excluded', () => {
+    const artist = mkArtist({ id: 'a' });
+    const albums = [mkAlbum({ id: 'x', artistId: 'a', excluded: true })];
+    expect(artistProgressRanking([artist], albums, {})).toEqual([]);
+  });
+});
+
+describe('completedAlbumTypeDistribution', () => {
+  it('counts finished albums per display type', () => {
+    const albums = [
+      mkAlbum({ id: 'lp', albumGroup: 'album', totalTracks: 1 }),
+      mkAlbum({ id: 'ep', albumGroup: 'single', totalTracks: 4 }),
+      mkAlbum({ id: 'unfinished', albumGroup: 'album', totalTracks: 2 }),
+    ];
+    const tracksByAlbum = {
+      lp: [mkTrack({ id: '1', albumId: 'lp', status: 'listened' })],
+      ep: Array.from({ length: 4 }, (_, i) =>
+        mkTrack({ id: `e${i}`, albumId: 'ep', trackNumber: i + 1, status: 'listened' }),
+      ),
+      unfinished: [
+        mkTrack({ id: 'u1', albumId: 'unfinished', status: 'listened' }),
+        mkTrack({ id: 'u2', albumId: 'unfinished', trackNumber: 2, status: 'none' }),
+      ],
+    };
+    expect(completedAlbumTypeDistribution(albums, tracksByAlbum)).toEqual([
+      { label: '정규', count: 1 },
+      { label: 'EP', count: 1 },
+      { label: '싱글', count: 0 },
+      { label: '컴필레이션', count: 0 },
+    ]);
+  });
+});
+
+describe('ratingHabits', () => {
+  it('computes averages and shares over listened tracks', () => {
+    const tracks = [
+      mkTrack({ id: '1', status: 'listened', rating: 4, likedAt: 'x' }),
+      mkTrack({ id: '2', status: 'listened', rating: 5 }),
+      mkTrack({ id: '3', status: 'listened' }),
+      mkTrack({ id: '4', status: 'skipped' }),
+    ];
+    const habits = ratingHabits(tracks);
+    expect(habits.averageRating).toBe(4.5);
+    expect(habits.ratedShare).toBeCloseTo(2 / 3);
+    expect(habits.likedShare).toBeCloseTo(1 / 3);
+    expect(habits.skippedShare).toBeCloseTo(1 / 4);
+  });
+
+  it('reports a null average when nothing is rated', () => {
+    expect(ratingHabits([mkTrack({ status: 'listened' })]).averageRating).toBeNull();
+  });
+});
+
+describe('suggestedUnheardAlbums', () => {
+  const artist = mkArtist({ id: 'a1' });
+
+  it('suggests untouched albums from highly rated artists, capped at two', () => {
+    const albums = [
+      mkAlbum({ id: 'rated', artistId: 'a1', rating: 4.5, releaseDate: '2000-01-01' }),
+      mkAlbum({ id: 'u1', artistId: 'a1', releaseDate: '2001-01-01' }),
+      mkAlbum({ id: 'u2', artistId: 'a1', releaseDate: '2002-01-01' }),
+      mkAlbum({ id: 'u3', artistId: 'a1', releaseDate: '2003-01-01' }),
+    ];
+    const suggested = suggestedUnheardAlbums([artist], albums, [], {
+      rated: [mkTrack({ id: 'r', albumId: 'rated', status: 'listened' })],
+    });
+    expect(suggested.map((a) => a.id)).toEqual(['u1', 'u2']);
+  });
+
+  it('ignores artists rated below 4.0', () => {
+    const albums = [
+      mkAlbum({ id: 'rated', artistId: 'a1', rating: 3.9 }),
+      mkAlbum({ id: 'u1', artistId: 'a1', releaseDate: '2001-01-01' }),
+    ];
+    expect(suggestedUnheardAlbums([artist], albums, [], {})).toEqual([]);
+  });
+
+  it('skips albums that are already started, excluded or out of scope', () => {
+    const albums = [
+      mkAlbum({ id: 'rated', artistId: 'a1', rating: 5 }),
+      mkAlbum({ id: 'started', artistId: 'a1', releaseDate: '2001-01-01' }),
+      mkAlbum({ id: 'hidden', artistId: 'a1', releaseDate: '2002-01-01', excluded: true }),
+      mkAlbum({
+        id: 'comp',
+        artistId: 'a1',
+        releaseDate: '2003-01-01',
+        albumGroup: 'compilation',
+      }),
+    ];
+    const suggested = suggestedUnheardAlbums([artist], albums, [], {
+      rated: [mkTrack({ id: 'r', albumId: 'rated', status: 'listened' })],
+      started: [mkTrack({ id: 's', albumId: 'started', status: 'skipped' })],
+    });
+    expect(suggested).toEqual([]);
+  });
+
+  it('does not suggest an album with no tracks at all', () => {
+    const albums = [
+      mkAlbum({ id: 'rated', artistId: 'a1', rating: 5 }),
+      mkAlbum({ id: 'empty', artistId: 'a1', releaseDate: '2001-01-01', totalTracks: 0 }),
+    ];
+    expect(
+      suggestedUnheardAlbums([artist], albums, [], {
+        rated: [mkTrack({ id: 'r', albumId: 'rated', status: 'listened' })],
+      }),
+    ).toEqual([]);
+  });
+
+  it('honours the limit', () => {
+    const albums = [
+      mkAlbum({ id: 'rated', artistId: 'a1', rating: 5 }),
+      mkAlbum({ id: 'u1', artistId: 'a1', releaseDate: '2001-01-01' }),
+      mkAlbum({ id: 'u2', artistId: 'a1', releaseDate: '2002-01-01' }),
+    ];
+    const suggested = suggestedUnheardAlbums(
+      [artist],
+      albums,
+      [],
+      { rated: [mkTrack({ id: 'r', albumId: 'rated', status: 'listened' })] },
+      1,
+    );
+    expect(suggested.map((a) => a.id)).toEqual(['u1']);
+  });
+});
+
+describe('onThisDay', () => {
+  const now = new Date(2026, 2, 15);
+
+  it('includes events from a year ago within the window, newest first', () => {
+    const events = [
+      mkEvent({ id: 'edge', listenedAt: '2025-03-18T10:00:00' }),
+      mkEvent({ id: 'exact', listenedAt: '2025-03-15T10:00:00' }),
+      mkEvent({ id: 'outside', listenedAt: '2025-03-19T10:00:00' }),
+    ];
+    expect(onThisDay(events, now).map((e) => e.id)).toEqual(['edge', 'exact']);
+  });
+
+  it('narrows to the exact day with a zero window', () => {
+    const events = [
+      mkEvent({ id: 'exact', listenedAt: '2025-03-15T10:00:00' }),
+      mkEvent({ id: 'near', listenedAt: '2025-03-16T10:00:00' }),
+    ];
+    expect(onThisDay(events, now, 0).map((e) => e.id)).toEqual(['exact']);
+  });
+
+  it('excludes today and two years ago', () => {
+    const events = [
+      mkEvent({ id: 'today', listenedAt: '2026-03-15T10:00:00' }),
+      mkEvent({ id: 'old', listenedAt: '2024-03-15T10:00:00' }),
+    ];
+    expect(onThisDay(events, now)).toEqual([]);
   });
 });

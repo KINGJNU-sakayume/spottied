@@ -1,4 +1,10 @@
-import type { Album, AlbumGroup, SpotifyImage, Track } from '../../types';
+import type {
+  Album,
+  AlbumGroup,
+  RecentlyPlayedItem,
+  SpotifyImage,
+  Track,
+} from '../../types';
 import { SpotifyApiError, spotifyFetch } from './client';
 
 interface Paging<T> {
@@ -34,16 +40,9 @@ interface SpotifyTrackObject {
   duration_ms: number;
 }
 
-export interface RecentlyPlayedItem {
-  track: {
-    id: string;
-    name: string;
-    duration_ms: number;
-    album: { id: string; name: string; images: SpotifyImage[] };
-    artists: Array<{ id: string; name: string }>;
-  };
-  played_at: string;
-}
+// Lives in types.ts so db/dexie.ts can cache it without the storage layer
+// importing from the API layer. Re-exported here for existing callers.
+export type { RecentlyPlayedItem } from '../../types';
 
 /**
  * February 2026 lowered /v1/search's limit ceiling from 50 to 10 (default 20

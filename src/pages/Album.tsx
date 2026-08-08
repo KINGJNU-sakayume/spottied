@@ -7,12 +7,16 @@ import {
   ExternalIcon,
   HeartIcon,
 } from '../components/Icons';
+import { BackdateDialog } from '../components/BackdateDialog';
+import { OverflowMenu } from '../components/OverflowMenu';
 import { ProgressRing } from '../components/ProgressRing';
 import { RouteSheet } from '../components/RouteSheet';
+import { Skeleton } from '../components/Skeleton';
 import { StarRating } from '../components/StarRating';
 import { TrackRow } from '../components/TrackRow';
 import { spotifyAlbumUrl } from '../lib/spotify/endpoints';
 import { useArtistStore } from '../store/artistStore';
+import { useUiStore } from '../store/uiStore';
 import { rgba, useDominantColor } from '../utils/color';
 import { cn } from '../utils/cn';
 import {
@@ -31,6 +35,9 @@ function AlbumContent({ albumId }: { albumId: string }) {
   const tracksMap = useArtistStore((s) => s.tracks);
   const ensureAlbumTracks = useArtistStore((s) => s.ensureAlbumTracks);
   const updateAlbum = useArtistStore((s) => s.updateAlbum);
+  const markAlbumListened = useArtistStore((s) => s.markAlbumListened);
+  const undoAlbumListened = useArtistStore((s) => s.undoAlbumListened);
+  const pushToast = useUiStore((s) => s.pushToast);
   const navigate = useNavigate();
 
   const coverUrl = album ? pickImage(album.images, 320) : undefined;
@@ -42,6 +49,8 @@ function AlbumContent({ albumId }: { albumId: string }) {
   );
 
   const [noteDraft, setNoteDraft] = useState(album?.note ?? '');
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [backdateOpen, setBackdateOpen] = useState(false);
   useEffect(() => {
     setNoteDraft(album?.note ?? '');
   }, [album?.id, album?.note]);
@@ -91,27 +100,42 @@ function AlbumContent({ albumId }: { albumId: string }) {
           >
             <ChevronLeftIcon size={18} />
           </button>
+          {/* Hidden rather than disabled at the ends of the discography: a
+              greyed-out arrow gives no clue why it will not move. */}
           <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              disabled={!prev}
-              aria-label="이전 앨범"
-              title={prev?.name}
-              className="glass flex h-9 w-9 items-center justify-center rounded-full text-ink/70 disabled:opacity-30"
-              onClick={() => prev && goSibling(prev.id)}
-            >
-              <ChevronLeftIcon size={16} />
-            </button>
-            <button
-              type="button"
-              disabled={!next}
-              aria-label="다음 앨범"
-              title={next?.name}
-              className="glass flex h-9 w-9 items-center justify-center rounded-full text-ink/70 disabled:opacity-30"
-              onClick={() => next && goSibling(next.id)}
-            >
-              <ChevronRightIcon size={16} />
-            </button>
+            {prev && (
+              <button
+                type="button"
+                aria-label={`이전 앨범: ${prev.name}`}
+                title={prev.name}
+                className="glass flex h-9 w-9 items-center justify-center rounded-full text-ink/70"
+                onClick={() => goSibling(prev.id)}
+              >
+                <ChevronLeftIcon size={16} />
+              </button>
+            )}
+            {next && (
+              <button
+                type="button"
+                aria-label={`다음 앨범: ${next.name}`}
+                title={next.name}
+                className="glass flex h-9 w-9 items-center justify-center rounded-full text-ink/70"
+                onClick={() => goSibling(next.id)}
+              >
+                <ChevronRightIcon size={16} />
+              </button>
+            )}
+            <OverflowMenu
+              label="앨범 메뉴"
+              open={menuOpen}
+              onOpenChange={setMenuOpen}
+              items={[
+                {
+                  label: '다른 날짜로 기록',
+                  onSelect: () => setBackdateOpen(true),
+                },
+              ]}
+            />
           </div>
         </div>
 
@@ -209,6 +233,28 @@ function AlbumContent({ albumId }: { albumId: string }) {
           )}
         </div>
       </div>
+
+      {backdateOpen && (
+        <BackdateDialog
+          title={album.name}
+          onConfirm={(listenedAt) => {
+            void (async () => {
+              const snapshot = await markAlbumListened(album.id, listenedAt);
+              if (!snapshot) {
+                pushToast('이미 전부 청취 처리된 앨범이에요');
+                return;
+              }
+              pushToast(`${snapshot.createdEventIds.length}곡 청취 처리`, {
+                action: {
+                  label: '실행 취소',
+                  onClick: () => void undoAlbumListened(snapshot),
+                },
+              });
+            })();
+          }}
+          onClose={() => setBackdateOpen(false)}
+        />
+      )}
     </div>
   );
 }
@@ -226,7 +272,18 @@ export default function AlbumPage({ overlay = false }: { overlay?: boolean }) {
   const loaded = useArtistStore((s) => s.loaded);
 
   if (!id) return null;
-  if (!loaded) return null;
+  if (!loaded) {
+    return (
+      <div className="mx-auto max-w-2xl px-5 pt-4">
+        <div className="flex flex-col items-center">
+          <Skeleton className="aspect-square w-56 rounded-[22px] md:w-64" />
+          <Skeleton className="mt-5 h-6 w-48 rounded" />
+          <Skeleton className="mt-2 h-4 w-28 rounded" />
+        </div>
+        <Skeleton className="mt-6 h-40 w-full rounded-[22px]" />
+      </div>
+    );
+  }
 
   if (overlay || isMobile) {
     return (

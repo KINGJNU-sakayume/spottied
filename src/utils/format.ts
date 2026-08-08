@@ -33,11 +33,24 @@ export function formatDayHeading(dateKey: string): string {
   return DAY_FORMATTER.format(new Date(`${dateKey}T12:00:00`));
 }
 
-export function localDayKey(iso: string): string {
-  const d = new Date(iso);
+/** Local-calendar day key, 'YYYY-MM-DD'. */
+export function dayKeyOf(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
     d.getDate(),
   ).padStart(2, '0')}`;
+}
+
+export function localDayKey(iso: string): string {
+  return dayKeyOf(new Date(iso));
+}
+
+/** "340시간 12분" — for cumulative totals where minutes alone stop reading. */
+export function formatLongDuration(ms: number): string {
+  const totalMin = Math.floor(Math.max(ms, 0) / 60000);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return `${m}분`;
+  return m > 0 ? `${h}시간 ${m}분` : `${h}시간`;
 }
 
 export function formatDate(iso: string): string {

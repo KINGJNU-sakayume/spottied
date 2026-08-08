@@ -87,6 +87,7 @@ export async function importBackup(
     db.albums,
     db.tracks,
     db.listenEvents,
+    db.recentlyPlayedCache,
     async () => {
       if (mode === 'replace') {
         await Promise.all([
@@ -94,6 +95,9 @@ export async function importBackup(
           db.albums.clear(),
           db.tracks.clear(),
           db.listenEvents.clear(),
+          // A restored corpus is a different library, and the cache may even
+          // belong to a different Spotify account. Merge leaves it alone.
+          db.recentlyPlayedCache.clear(),
         ]);
       }
       // Merge = union by ids (bulkPut overwrites same-id rows);
@@ -120,12 +124,16 @@ export async function wipeAllData(): Promise<void> {
     db.albums,
     db.tracks,
     db.listenEvents,
+    db.recentlyPlayedCache,
     async () => {
       await Promise.all([
         db.artists.clear(),
         db.albums.clear(),
         db.tracks.clear(),
         db.listenEvents.clear(),
+        // Leaving a cached listening history behind after "모든 데이터 삭제"
+        // would be a privacy defect, not a cosmetic one.
+        db.recentlyPlayedCache.clear(),
       ]);
     },
   );
