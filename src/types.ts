@@ -66,3 +66,26 @@ export interface ListenEvent {
 }
 
 export type ArtistDigStatus = 'not-started' | 'in-progress' | 'completed';
+
+/** One entry of /v1/me/player/recently-played. */
+export interface RecentlyPlayedItem {
+  track: {
+    id: string;
+    name: string;
+    duration_ms: number;
+    album: { id: string; name: string; images: SpotifyImage[] };
+    artists: Array<{ id: string; name: string }>;
+  };
+  played_at: string;
+}
+
+/**
+ * Last successful recently-played response, so Home can render its shelf
+ * offline. A derived cache — reconstructible in one API call, and scoped to
+ * the Spotify account that fetched it — so it is never part of a backup.
+ */
+export interface RecentlyPlayedCache {
+  id: 'latest'; // single-row table
+  fetchedAt: string;
+  items: RecentlyPlayedItem[];
+}

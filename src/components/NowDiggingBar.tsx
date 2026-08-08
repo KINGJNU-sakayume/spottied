@@ -2,14 +2,9 @@ import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { spotifyAlbumUrl } from '../lib/spotify/endpoints';
 import { useArtistStore } from '../store/artistStore';
-import { useLogStore } from '../store/logStore';
 import { rgba, useDominantColor } from '../utils/color';
-import {
-  getAlbumProgress,
-  getArtistStatus,
-  getResumePoint,
-} from '../utils/derive';
-import { useTracksByAlbum } from '../utils/hooks';
+import { getAlbumProgress, getResumePoint } from '../utils/derive';
+import { useDiggingGroups, useTracksByAlbum } from '../utils/hooks';
 import { CoverImage, pickImage } from './CoverImage';
 import { PlayIcon } from './Icons';
 
@@ -19,31 +14,19 @@ import { PlayIcon } from './Icons';
  * that is actually the "이어서 듣기" Spotify deep link.
  */
 export function NowDiggingBar() {
-  const artists = useArtistStore((s) => s.artists);
   const albums = useArtistStore((s) => s.albums);
-  const events = useLogStore((s) => s.events);
   const tracksByAlbum = useTracksByAlbum();
+
+  const { inProgress } = useDiggingGroups();
 
   const current = useMemo(() => {
     const albumList = Object.values(albums);
-    const lastListen = new Map<string, string>();
-    for (const e of events) {
-      const prev = lastListen.get(e.artistId);
-      if (!prev || e.listenedAt > prev) lastListen.set(e.artistId, e.listenedAt);
-    }
-    const inProgress = Object.values(artists)
-      .filter((a) => getArtistStatus(a, albumList, tracksByAlbum) === 'in-progress')
-      .sort((a, b) => {
-        const ta = lastListen.get(a.id) ?? a.addedAt;
-        const tb = lastListen.get(b.id) ?? b.addedAt;
-        return tb.localeCompare(ta);
-      });
     for (const artist of inProgress) {
       const rp = getResumePoint(artist, albumList, tracksByAlbum);
       if (rp) return { artist, rp };
     }
     return null;
-  }, [artists, albums, events, tracksByAlbum]);
+  }, [inProgress, albums, tracksByAlbum]);
 
   const accent = useDominantColor(
     current ? pickImage(current.rp.album.images, 80) : undefined,

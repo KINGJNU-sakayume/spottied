@@ -1,5 +1,11 @@
 import Dexie, { type Table } from 'dexie';
-import type { Album, Artist, ListenEvent, Track } from '../types';
+import type {
+  Album,
+  Artist,
+  ListenEvent,
+  RecentlyPlayedCache,
+  Track,
+} from '../types';
 
 /**
  * Schema versioning: always add new versions with an explicit
@@ -12,6 +18,7 @@ class SpottiedDB extends Dexie {
   albums!: Table<Album, string>;
   tracks!: Table<Track, string>;
   listenEvents!: Table<ListenEvent, string>;
+  recentlyPlayedCache!: Table<RecentlyPlayedCache, string>;
 
   constructor() {
     super('spottied');
@@ -20,6 +27,12 @@ class SpottiedDB extends Dexie {
       albums: 'id, artistId, releaseDate',
       tracks: 'id, albumId, artistId',
       listenEvents: 'id, trackId, albumId, artistId, listenedAt',
+    });
+    // v2: offline cache of the last recently-played response. Purely
+    // additive — Dexie carries the v1 tables forward, so only the new table
+    // is listed and no .upgrade() callback is needed.
+    this.version(2).stores({
+      recentlyPlayedCache: 'id',
     });
   }
 }
