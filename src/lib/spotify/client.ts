@@ -26,7 +26,34 @@ export function setRateLimitHandler(fn: () => void): void {
 }
 
 export function getClientId(): string {
-  return import.meta.env.VITE_SPOTIFY_CLIENT_ID ?? '';
+  return (import.meta.env.VITE_SPOTIFY_CLIENT_ID ?? '').trim();
+}
+
+/**
+ * Vite inlines an empty string when the build had no VITE_SPOTIFY_CLIENT_ID,
+ * which otherwise fails much later as an opaque 400 from Spotify.
+ */
+export function isClientIdConfigured(): boolean {
+  return getClientId() !== '';
+}
+
+export const MISSING_CLIENT_ID_MESSAGE =
+  'Spotify Client ID가 빌드에 포함되지 않았어요. GitHub Actions 시크릿 VITE_SPOTIFY_CLIENT_ID를 등록한 뒤 다시 배포해 주세요.';
+
+/** Spotify puts the useful detail in the response body, not the status. */
+async function readSpotifyError(res: Response, fallback: string): Promise<string> {
+  try {
+    const body = (await res.json()) as {
+      error?: string | { message?: string };
+      error_description?: string;
+    };
+    const detail =
+      body.error_description ??
+      (typeof body.error === 'string' ? body.error : body.error?.message);
+    return detail ? `${fallback} — ${detail}` : fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 /** The app's own root URL — must be registered in the Spotify dashboard. */
@@ -68,7 +95,9 @@ async function tokenRequest(body: Record<string, string>): Promise<TokenResponse
     body: new URLSearchParams(body),
   });
   if (!res.ok) {
-    throw new SpotifyAuthError(`토큰 요청 실패 (${res.status})`);
+    throw new SpotifyAuthError(
+      await readSpotifyError(res, `토큰 요청 실패 (${res.status})`),
+    );
   }
   return res.json() as Promise<TokenResponse>;
 }
@@ -148,7 +177,9 @@ export async function spotifyFetch<T>(path: string): Promise<T> {
       continue;
     }
     if (!res.ok) {
-      throw new Error(`Spotify API 오류 (${res.status})`);
+      throw new Error(
+        await readSpotifyError(res, `Spotify API 오류 (${res.status})`),
+      );
     }
     return res.json() as Promise<T>;
   }

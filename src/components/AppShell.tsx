@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { isClientIdConfigured } from '../lib/spotify/client';
 import { beginLogin } from '../lib/spotify/pkce';
 import { useUiStore } from '../store/uiStore';
 import { cn } from '../utils/cn';
@@ -13,27 +14,27 @@ const TABS = [
   { to: '/settings', label: '설정', icon: GearIcon },
 ] as const;
 
-function ReconnectBanner() {
-  const needsReconnect = useUiStore((s) => s.needsReconnect);
-  const setNeedsReconnect = useUiStore((s) => s.setNeedsReconnect);
-  if (!needsReconnect) return null;
+function AuthBanner() {
+  const authNotice = useUiStore((s) => s.authNotice);
+  const setAuthNotice = useUiStore((s) => s.setAuthNotice);
+  if (!authNotice) return null;
   return (
-    <div className="glass-bar fade-in fixed inset-x-3 top-3 z-50 flex items-center gap-3 rounded-[20px] p-3 lg:left-[15rem] lg:right-4">
-      <p className="min-w-0 flex-1 text-sm font-medium text-ink/75">
-        Spotify 연결이 만료되었어요
-      </p>
-      <button
-        type="button"
-        className="shrink-0 rounded-full bg-ink px-4 py-1.5 text-sm font-semibold text-white transition-transform active:scale-95"
-        onClick={() => void beginLogin()}
-      >
-        Spotify 재연결
-      </button>
+    <div className="glass-bar fade-in fixed inset-x-3 top-3 z-50 flex items-start gap-3 rounded-[20px] p-3 lg:left-[15rem] lg:right-4">
+      <p className="min-w-0 flex-1 text-sm font-medium text-ink/75">{authNotice}</p>
+      {isClientIdConfigured() && (
+        <button
+          type="button"
+          className="shrink-0 rounded-full bg-ink px-4 py-1.5 text-sm font-semibold text-white transition-transform active:scale-95"
+          onClick={() => void beginLogin()}
+        >
+          Spotify 재연결
+        </button>
+      )}
       <button
         type="button"
         aria-label="닫기"
-        className="shrink-0 text-ink/35 hover:text-ink/70"
-        onClick={() => setNeedsReconnect(false)}
+        className="shrink-0 pt-0.5 text-ink/35 hover:text-ink/70"
+        onClick={() => setAuthNotice(null)}
       >
         <XIcon size={16} />
       </button>
@@ -118,7 +119,7 @@ export function AppShell() {
       <NowDiggingBar />
       <TabBar />
       <ToastHost />
-      <ReconnectBanner />
+      <AuthBanner />
     </div>
   );
 }

@@ -9,11 +9,12 @@ export interface ToastItem {
 
 interface UiState {
   toasts: ToastItem[];
-  needsReconnect: boolean;
+  /** Non-blocking auth banner text; null hides the banner. */
+  authNotice: string | null;
   spotifyConnected: boolean;
   pushToast: (message: string, grand?: boolean) => void;
   dismissToast: (id: number) => void;
-  setNeedsReconnect: (v: boolean) => void;
+  setAuthNotice: (message: string | null) => void;
   refreshConnected: () => void;
 }
 
@@ -21,7 +22,7 @@ let nextToastId = 1;
 
 export const useUiStore = create<UiState>((set, get) => ({
   toasts: [],
-  needsReconnect: false,
+  authNotice: null,
   spotifyConnected: hasTokens(),
 
   pushToast: (message, grand = false) => {
@@ -34,9 +35,8 @@ export const useUiStore = create<UiState>((set, get) => ({
     set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
   },
 
-  setNeedsReconnect: (v) => {
-    set({ needsReconnect: v });
-    if (v) set({ spotifyConnected: hasTokens() });
+  setAuthNotice: (message) => {
+    set({ authNotice: message, spotifyConnected: hasTokens() });
   },
 
   refreshConnected: () => {

@@ -3,7 +3,12 @@ import { useNavigate } from 'react-router-dom';
 import { pickImage } from '../components/CoverImage';
 import { SearchIcon } from '../components/Icons';
 import { StatusBadge } from '../components/StatusBadge';
-import { SpotifyAuthError, hasTokens } from '../lib/spotify/client';
+import {
+  MISSING_CLIENT_ID_MESSAGE,
+  SpotifyAuthError,
+  hasTokens,
+  isClientIdConfigured,
+} from '../lib/spotify/client';
 import { searchArtists, type SpotifyArtistObject } from '../lib/spotify/endpoints';
 import { beginLogin } from '../lib/spotify/pkce';
 import { useArtistStore } from '../store/artistStore';
@@ -45,7 +50,7 @@ export default function Search() {
         })
         .catch((e: unknown) => {
           if (!(e instanceof SpotifyAuthError)) {
-            pushToast('검색에 실패했어요');
+            pushToast(e instanceof Error ? e.message : '검색에 실패했어요');
           }
         })
         .finally(() => setSearching(false));
@@ -68,7 +73,16 @@ export default function Search() {
     <div>
       <h1 className="mb-4 text-[28px] font-bold tracking-tight">검색</h1>
 
-      {!connected ? (
+      {!isClientIdConfigured() ? (
+        <div className="glass mt-16 rounded-[22px] p-5 text-center">
+          <p className="text-sm font-semibold text-ink/80">
+            Spotify 설정이 완료되지 않았어요
+          </p>
+          <p className="mt-2 text-sm leading-relaxed text-ink/55">
+            {MISSING_CLIENT_ID_MESSAGE}
+          </p>
+        </div>
+      ) : !connected ? (
         <div className="mt-24 text-center">
           <p className="text-sm text-ink/50">
             아티스트 검색에는 Spotify 연결이 필요해요.

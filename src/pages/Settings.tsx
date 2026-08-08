@@ -8,7 +8,13 @@ import {
   type BackupFile,
   type ImportSummary,
 } from '../db/backup';
-import { disconnectSpotify, getRedirectUri } from '../lib/spotify/client';
+import {
+  MISSING_CLIENT_ID_MESSAGE,
+  disconnectSpotify,
+  getClientId,
+  getRedirectUri,
+  isClientIdConfigured,
+} from '../lib/spotify/client';
 import { beginLogin } from '../lib/spotify/pkce';
 import { useArtistStore } from '../store/artistStore';
 import { useLogStore } from '../store/logStore';
@@ -18,7 +24,7 @@ import { useOnline } from '../utils/hooks';
 export default function Settings() {
   const pushToast = useUiStore((s) => s.pushToast);
   const refreshConnected = useUiStore((s) => s.refreshConnected);
-  const setNeedsReconnect = useUiStore((s) => s.setNeedsReconnect);
+  const setAuthNotice = useUiStore((s) => s.setAuthNotice);
   const connected = useUiStore((s) => s.spotifyConnected);
   const online = useOnline();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,7 +93,11 @@ export default function Settings() {
             검색·디스코그래피 가져오기·동기화에만 사용돼요. 연결 없이도 저장된
             데이터는 모두 사용할 수 있어요.
           </p>
-          {connected ? (
+          {!isClientIdConfigured() ? (
+            <p className="rounded-xl bg-rose-500/10 p-3 text-xs leading-relaxed text-rose-700 ring-1 ring-inset ring-rose-500/20">
+              {MISSING_CLIENT_ID_MESSAGE}
+            </p>
+          ) : connected ? (
             <div className="flex items-center gap-3">
               <span className="text-sm font-semibold text-emerald-600">연결됨</span>
               <button
@@ -96,7 +106,7 @@ export default function Settings() {
                 onClick={() => {
                   disconnectSpotify();
                   refreshConnected();
-                  setNeedsReconnect(false);
+                  setAuthNotice(null);
                   pushToast('Spotify 연결을 해제했어요');
                 }}
               >
@@ -114,9 +124,19 @@ export default function Settings() {
               Spotify 연결
             </button>
           )}
-          <p className="mt-3 break-all text-[11px] text-ink/30">
-            Redirect URI: {getRedirectUri()}
-          </p>
+          {/* Both values must match the Spotify dashboard exactly. */}
+          <dl className="mt-3 space-y-1 text-[11px] text-ink/30">
+            <div className="break-all">
+              <dt className="inline font-semibold">Redirect URI: </dt>
+              <dd className="inline">{getRedirectUri()}</dd>
+            </div>
+            <div className="break-all">
+              <dt className="inline font-semibold">Client ID: </dt>
+              <dd className="inline">
+                {isClientIdConfigured() ? getClientId() : '(설정되지 않음)'}
+              </dd>
+            </div>
+          </dl>
         </GlassCard>
 
         <GlassCard className="p-4">
